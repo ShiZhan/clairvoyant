@@ -15,26 +15,32 @@
  */
 
 object clairvoyant {
-  import edu.uci.ics.crawler4j.crawler.{ CrawlConfig, CrawlController }
+  import edu.uci.ics.crawler4j.crawler.{ CrawlConfig, CrawlController, WebCrawler }
   import edu.uci.ics.crawler4j.fetcher.PageFetcher
   import edu.uci.ics.crawler4j.robotstxt.{ RobotstxtConfig, RobotstxtServer }
 
-  def main(args: Array[String]) = {
-    val crawlStorageFolder = "/data/crawl/root"
-    val numberOfCrawlers = 7
-
+  def crawlerControl(store: String, numberOfCrawlers: Int, c: Class[_]) = {
     val config = new CrawlConfig()
-    config.setCrawlStorageFolder(crawlStorageFolder)
+    config.setCrawlStorageFolder(store)
+    val pageFetcher = new PageFetcher(config)
+    val robotstxtConfig = new RobotstxtConfig()
+    val robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher)
+    val controller = new CrawlController(config, pageFetcher, robotstxtServer)
 
-    val pageFetcher = new PageFetcher(config);
-    val robotstxtConfig = new RobotstxtConfig();
-    val robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
-    val controller = new CrawlController(config, pageFetcher, robotstxtServer);
+    controller.addSeed("http://www.ics.uci.edu/~welling/")
+    controller.addSeed("http://www.ics.uci.edu/~lopes/")
+    controller.addSeed("http://www.ics.uci.edu/")
 
-    controller.addSeed("http://www.ics.uci.edu/~welling/");
-    controller.addSeed("http://www.ics.uci.edu/~lopes/");
-    controller.addSeed("http://www.ics.uci.edu/");
+    controller.start(c.asSubclass(classOf[WebCrawler]), numberOfCrawlers)
+  }
 
-    controller.start(classOf[crawlers.HubeiDaily], numberOfCrawlers);
+  val usage = "clairvoyant <local folder> <number of crawlers>"
+
+  def main(args: Array[String]) = {
+    if (args.length < 2) {
+      println(usage)
+    } else {
+      crawlerControl(args(0), args(1).toInt, classOf[crawlers.HubeiDaily])
+    }
   }
 }
