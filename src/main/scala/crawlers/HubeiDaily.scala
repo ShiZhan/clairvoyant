@@ -37,5 +37,10 @@ class HubeiDaily extends WebCrawler {
       println("Number of outgoing links: " + links.size)
     }
   }
-
 }
+
+object HubeiDaily extends Crawlers(
+  List(
+    "http://www.ics.uci.edu/~welling/",
+    "http://www.ics.uci.edu/~lopes/"),
+  classOf[HubeiDaily])
