@@ -43,4 +43,4 @@ object HubeiDaily extends CrawlerObject(
   List(
     "http://www.ics.uci.edu/~welling/",
     "http://www.ics.uci.edu/~lopes/"),
-  classOf[HubeiDaily]) { val key = "HubeiDaily" }
+  classOf[HubeiDaily])
