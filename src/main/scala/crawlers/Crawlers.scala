@@ -20,9 +20,14 @@ class Control(crawlerObject: CrawlerObject, store: String, threads: Int) {
 }
 
 object Crawlers {
-  val list = List(
+  val list = Seq(
     HubeiDaily)
-    .map { c => (c.getClass.getName.substring(9).dropRight(1) -> c) } toMap
+    .map { c =>
+      val qName = c.getClass.getName
+      val from = qName.lastIndexOf(".") + 1
+      val to = qName.length - 1
+      (qName.substring(from, to) -> c)
+    } toMap
 
   def setup(crawlerName: String, store: String, threads: Int) = {
     val c = list.getOrElse(crawlerName, DefaultCrawler)
