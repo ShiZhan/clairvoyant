@@ -7,6 +7,7 @@ import java.util.regex.Pattern
 import edu.uci.ics.crawler4j.crawler.{ WebCrawler, Page }
 import edu.uci.ics.crawler4j.parser.HtmlParseData
 import edu.uci.ics.crawler4j.url.WebURL
+import scala.xml.XML
 
 /**
  * @author ShiZhan
@@ -18,7 +19,7 @@ class HubeiDaily extends WebCrawler {
 
   override def shouldVisit(url: WebURL): Boolean = {
     val href = url.getURL.toLowerCase
-    !FILTERS.matcher(href).matches() && href.startsWith("http://www.ics.uci.edu/")
+    !FILTERS.matcher(href).matches() && href.startsWith("http://shizhan.github.io/")
   }
 
   override def visit(page: Page): Unit = {
@@ -27,20 +28,21 @@ class HubeiDaily extends WebCrawler {
 
     val parseData = page.getParseData
     if (parseData.isInstanceOf[HtmlParseData]) {
-      val htmlParseData = page.getParseData.asInstanceOf[HtmlParseData]
-      val text = htmlParseData.getText
-      val html = htmlParseData.getHtml
-      val links = htmlParseData.getOutgoingUrls
+      val data = page.getParseData.asInstanceOf[HtmlParseData]
+      val title = data.getTitle
+      val html = data.getHtml
+      val links = data.getOutgoingUrls
 
-      println("Text length: " + text.length)
+      println("Title: " + title)
       println("Html length: " + html.length)
       println("Number of outgoing links: " + links.size)
+
+      println(html)
     }
   }
 }
 
 object HubeiDaily extends CrawlerObject(
   List(
-    "http://www.ics.uci.edu/~welling/",
-    "http://www.ics.uci.edu/~lopes/"),
+    "http://shizhan.github.io/"),
   classOf[HubeiDaily])

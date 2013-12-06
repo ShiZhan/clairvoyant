@@ -41,4 +41,4 @@ class DefaultCrawler extends WebCrawler {
 
 object DefaultCrawler extends CrawlerObject(
   List("http://shizhan.github.io/"),
-  classOf[HubeiDaily])
+  classOf[DefaultCrawler])
