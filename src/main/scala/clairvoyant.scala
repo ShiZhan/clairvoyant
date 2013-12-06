@@ -15,31 +15,17 @@
  */
 
 object clairvoyant {
-  import edu.uci.ics.crawler4j.crawler.{ CrawlConfig, CrawlController, WebCrawler }
-  import edu.uci.ics.crawler4j.fetcher.PageFetcher
-  import edu.uci.ics.crawler4j.robotstxt.{ RobotstxtConfig, RobotstxtServer }
-  import crawlers._
+  import crawlers.Crawlers
 
-  private def crawlerControl(store: String, threads: Int, c: Crawlers) = {
-    val config = new CrawlConfig()
-    config.setCrawlStorageFolder(store)
-    val pageFetcher = new PageFetcher(config)
-    val robotstxtConfig = new RobotstxtConfig()
-    val robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher)
-    val controller = new CrawlController(config, pageFetcher, robotstxtServer)
-
-    c.seed foreach controller.addSeed
-
-    controller.start(c.crawler.asSubclass(classOf[WebCrawler]), threads)
-  }
-
-  val usage = "clairvoyant <local folder> <number of crawlers>"
+  val usage = """clairvoyant <crawler> <local folder> <number of threads>
+available crawlers:
+""" + Crawlers.list.map(_._1).mkString("\n")
 
   def main(args: Array[String]) = {
-    if (args.length < 2) {
+    if (args.length < 3) {
       println(usage)
     } else {
-      crawlerControl(args(0), args(1).toInt, HubeiDaily)
+      Crawlers.setup(args(0), args(1), args(2).toInt).start
     }
   }
 }
