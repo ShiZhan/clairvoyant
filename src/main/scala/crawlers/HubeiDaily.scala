@@ -7,7 +7,6 @@ import java.util.regex.Pattern
 import edu.uci.ics.crawler4j.crawler.{ WebCrawler, Page }
 import edu.uci.ics.crawler4j.parser.HtmlParseData
 import edu.uci.ics.crawler4j.url.WebURL
-import scala.xml.XML
 
 /**
  * @author ShiZhan
