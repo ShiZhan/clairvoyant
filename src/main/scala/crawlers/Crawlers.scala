@@ -20,17 +20,20 @@ class Control(crawlerObject: CrawlerObject, store: String, threads: Int) {
 }
 
 object Crawlers {
-  val list = Seq(
+  private val _cList = Seq(
     HubeiDaily)
-    .map { c =>
-      val qName = c.getClass.getName
-      val from = qName.lastIndexOf(".") + 1
-      val to = qName.length - 1
-      (qName.substring(from, to) -> c)
-    } toMap
+
+  private val cList = _cList.map { c =>
+    val qName = c.getClass.getName
+    val from = qName.lastIndexOf(".") + 1
+    val to = qName.length - 1
+    (qName.substring(from, to) -> c)
+  } toMap
+
+  def list = cList.map { case (n, c) => n } mkString ("\n")
 
   def setup(crawlerName: String, store: String, threads: Int) = {
-    val c = list.getOrElse(crawlerName, DefaultCrawler)
+    val c = cList.getOrElse(crawlerName, DefaultCrawler)
     new Control(c, store, threads)
   }
 }

@@ -17,9 +17,8 @@
 object clairvoyant {
   import crawlers.Crawlers
 
-  val usage = """clairvoyant <crawler> <local folder> <number of threads>
-available crawlers:
-""" + Crawlers.list.map(_._1).mkString("\n")
+  val usage = "clairvoyant <crawler> <local folder> <number of threads>\n" +
+    "available crawlers:\n" + Crawlers.list
 
   def main(args: Array[String]) = {
     if (args.length < 3) {

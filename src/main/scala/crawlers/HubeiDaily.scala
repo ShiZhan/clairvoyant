@@ -36,8 +36,6 @@ class HubeiDaily extends WebCrawler {
       println("Title: " + title)
       println("Html length: " + html.length)
       println("Number of outgoing links: " + links.size)
-
-      println(html)
     }
   }
 }
