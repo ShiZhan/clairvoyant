@@ -13,18 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+object Page {
+  private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
+
+  def load(url: String) = {
+    try {
+      val content = io.Source.fromURL(url).mkString
+      val links = linkRegex.findAllIn(content).matchData.toList.map(_.group(1))
+      (content, links)
+    } catch {
+      case e: Exception =>
+        System.err.println(e)
+        ("", List[String]())
+    }
+  }
+}
 
 object clairvoyant {
-  import crawlers.Crawlers
+  import java.io.File
+  import actors.Futures
 
-  val usage = "clairvoyant <crawler> <local folder> <number of threads>\n" +
-    "available crawlers:\n" + Crawlers.list
+  val usage = "clairvoyant <url> <local folder>"
 
   def main(args: Array[String]) = {
-    if (args.length < 3) {
+    if (args.length < 2) {
       println(usage)
     } else {
-      Crawlers.setup(args(0), args(1), args(2).toInt).start
+      val store = args(1)
+      val url = args(0)
+      val (page, links) = Page.load(url)
+      print(url + ": " + page.length)
+      val pages = links.map { u => Futures.future(Page.load(u)) }
+      pages.foreach { f => println(f()) }
     }
   }
 }
