@@ -107,6 +107,10 @@ object clairvoyant {
       controller ! Link(startURLs)
 
       console
+
+      controller ! STOP
+      loader ! STOP
+      writer ! STOP
     }
   }
 }
