@@ -13,38 +13,84 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-object Page {
-  private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
+case class Page(uri: String, content: String)
+case class Link(links: List[String])
+case class STOP
 
+trait Parser {
+  private var traveled = collection.mutable.HashSet[String]()
+  def crawled(url: String) = traveled.contains(url)
+  def interested(url: String) = true
+
+  private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
   def load(url: String) = {
+    traveled += url
     try {
       val content = io.Source.fromURL(url).mkString
       val links = linkRegex.findAllIn(content).matchData.toList.map(_.group(1))
-      (content, links)
+      (Page(url, content), Link(links))
     } catch {
       case e: Exception =>
         System.err.println(e)
-        ("", List[String]())
+        (Page(url, ""), Link(List[String]()))
     }
   }
 }
 
+object Demo extends Parser {
+
+}
+
 object clairvoyant {
   import java.io.File
-  import actors.Futures
+  import actors.Actor._
+  import Demo._
 
-  val usage = "clairvoyant <url> <local folder>"
+  val usage = "clairvoyant <local folder> <url ...>"
 
   def main(args: Array[String]) = {
     if (args.length < 2) {
       println(usage)
     } else {
-      val store = args(1)
-      val url = args(0)
-      val (page, links) = Page.load(url)
-      print(url + ": " + page.length)
-      val pages = links.map { u => Futures.future(Page.load(u)) }
-      pages.foreach { f => println(f()) }
+      val store = args(0)
+      val startURL = args.tail.toList
+
+      val writer = actor {
+        loop {
+          react {
+            case Page(url, content) => {
+
+            }
+            case STOP => exit
+          }
+        }
+      }
+
+      val loader = actor {
+        loop {
+          react {
+            case url: String => {
+              val (page, links) = load(url)
+              sender ! links
+              writer ! page
+            }
+            case STOP => exit
+          }
+        }
+      }
+
+      val controller = actor {
+        loop {
+          react {
+            case Link(urls) => urls.foreach { url =>
+              if (!crawled(url) & interested(url)) loader ! url
+            }
+            case STOP => exit
+          }
+        }
+      }
+
+      controller ! Link(startURL)
     }
   }
 }
