@@ -48,12 +48,26 @@ object clairvoyant {
 
   val usage = "clairvoyant <local folder> <url ...>"
 
+  def console: Unit = {
+    val prompt = "> "
+    print(prompt)
+    for (line <- io.Source.stdin.getLines) {
+      val output = line.split(" ").toList match {
+        case "exit" :: Nil => return
+        case "" :: Nil => null
+        case _ => "Unrecognized command: [%s]".format(line)
+      }
+      println(output)
+      print(prompt)
+    }
+  }
+
   def main(args: Array[String]) = {
     if (args.length < 2) {
       println(usage)
     } else {
       val store = args(0)
-      val startURL = args.tail.toList
+      val startURLs = args.tail.toList
 
       val writer = actor {
         loop {
@@ -90,7 +104,9 @@ object clairvoyant {
         }
       }
 
-      controller ! Link(startURL)
+      controller ! Link(startURLs)
+
+      console
     }
   }
 }
