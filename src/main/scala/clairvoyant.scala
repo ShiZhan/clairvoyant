@@ -46,7 +46,7 @@ object clairvoyant {
   import actors.Actor._
   import Demo._
 
-  val usage = "clairvoyant <local folder> <url ...>"
+  val usage = "clairvoyant <local folder> <threads> <url ...>"
 
   def console: Unit = {
     val prompt = "> "
@@ -57,17 +57,18 @@ object clairvoyant {
         case "" :: Nil => null
         case _ => "Unrecognized command: [%s]".format(line)
       }
-      println(output)
+      if (null != output) println(output)
       print(prompt)
     }
   }
 
   def main(args: Array[String]) = {
-    if (args.length < 2) {
+    if (args.length < 3) {
       println(usage)
     } else {
       val store = args(0)
-      val startURLs = args.tail.toList
+      val threads = args(1).toShort
+      val startURLs = args.drop(2).toList
 
       val writer = actor {
         loop {
@@ -80,7 +81,7 @@ object clairvoyant {
         }
       }
 
-      val loader = actor {
+      def loader = actor {
         loop {
           react {
             case url: String => {
@@ -93,11 +94,16 @@ object clairvoyant {
         }
       }
 
+      val loaders = (0 to threads - 1) map { i => loader }
+
       val controller = actor {
         loop {
           react {
-            case Link(urls) => urls.foreach { url =>
-              if (!crawled(url) & interested(url)) loader ! url
+            case Link(urls) => urls.grouped(threads).foreach { ug =>
+              ug.zipWithIndex.foreach {
+                case (url, index) =>
+                  if (!crawled(url) & interested(url)) loaders(index) ! url
+              }
             }
             case STOP => exit
           }
@@ -109,7 +115,7 @@ object clairvoyant {
       console
 
       controller ! STOP
-      loader ! STOP
+      loaders.foreach(_ ! STOP)
       writer ! STOP
     }
   }
