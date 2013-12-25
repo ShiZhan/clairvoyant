@@ -41,8 +41,9 @@ trait Parser {
 object Demo extends Parser {}
 
 object Console {
+  val prompt = "> "
+
   def console: Unit = {
-    val prompt = "> "
     print(prompt)
     for (line <- io.Source.stdin.getLines) {
       val output = line.split(" ").toList match {
@@ -61,12 +62,12 @@ object clairvoyant {
   import Demo._
   import Console.console
 
-  val usage = "clairvoyant <local folder> <threads> <url ...>"
+  val usage = "clairvoyant <local folder> <concurrency> <url ...>"
 
   def main(args: Array[String]) = if (args.length < 3) println(usage)
   else {
     val store = args(0)
-    val threads = args(1).toShort
+    val concurrency = args(1).toShort
     val startURLs = args.drop(2).toList
 
     val writer = actor {
@@ -78,13 +79,13 @@ object clairvoyant {
       }
     }
 
-    val loaders = (0 to threads - 1) map { i =>
+    val loaders = (0 to concurrency - 1) map { i =>
       actor {
         loop {
           react {
             case url: String => {
               val (page, links) = load(url)
-              println(url)
+              println("Loader [%d]: %s".format(i, url))
               sender ! links
               writer ! page
             }
@@ -98,10 +99,8 @@ object clairvoyant {
       loop {
         react {
           case Link(urls) => urls.filter(u => !crawled(u) & interested(u))
-            .grouped(threads).foreach {
-              _.zipWithIndex.foreach {
-                case (url, index) => loaders(index) ! url
-              }
+            .grouped(concurrency).foreach {
+              _.zipWithIndex.foreach { case (url, index) => loaders(index) ! url }
             }
           case STOP => exit
         }
