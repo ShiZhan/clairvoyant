@@ -28,7 +28,7 @@ trait Parser {
     traveled += url
     try {
       val content = io.Source.fromURL(url).mkString
-      val links = linkRegex.findAllIn(content).matchData.toList.map(_.group(1))
+      val links = linkRegex.findAllIn(content).matchData.toList.map(_.group(1)).distinct
       (Page(url, content), Link(links))
     } catch {
       case e: Exception =>
@@ -84,6 +84,7 @@ object clairvoyant {
           react {
             case url: String => {
               val (page, links) = load(url)
+              println(url)
               sender ! links
               writer ! page
             }
@@ -96,12 +97,12 @@ object clairvoyant {
     val controller = actor {
       loop {
         react {
-          case Link(urls) => urls.grouped(threads).foreach { ug =>
-            ug.zipWithIndex.foreach {
-              case (url, index) =>
-                if (!crawled(url) & interested(url)) loaders(index) ! url
+          case Link(urls) => urls.filter(u => !crawled(u) & interested(u))
+            .grouped(threads).foreach {
+              _.zipWithIndex.foreach {
+                case (url, index) => loaders(index) ! url
+              }
             }
-          }
           case STOP => exit
         }
       }
@@ -115,6 +116,6 @@ object clairvoyant {
     loaders.foreach(_ ! STOP)
     writer ! STOP
 
-    allURLs.foreach(println)
+    println("Traveled URI: " + allURLs.length)
   }
 }
