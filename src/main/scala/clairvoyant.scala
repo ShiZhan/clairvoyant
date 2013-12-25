@@ -21,6 +21,7 @@ trait Parser {
   private var traveled = collection.mutable.HashSet[String]()
   def crawled(url: String) = traveled.contains(url)
   def interested(url: String) = true
+  def allURLs = traveled.iterator
 
   private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
   def load(url: String) = {
@@ -37,17 +38,9 @@ trait Parser {
   }
 }
 
-object Demo extends Parser {
+object Demo extends Parser {}
 
-}
-
-object clairvoyant {
-  import java.io.File
-  import actors.Actor._
-  import Demo._
-
-  val usage = "clairvoyant <local folder> <threads> <url ...>"
-
+object Console {
   def console: Unit = {
     val prompt = "> "
     print(prompt)
@@ -61,6 +54,14 @@ object clairvoyant {
       print(prompt)
     }
   }
+}
+
+object clairvoyant {
+  import actors.Actor._
+  import Demo._
+  import Console.console
+
+  val usage = "clairvoyant <local folder> <threads> <url ...>"
 
   def main(args: Array[String]) = {
     if (args.length < 3) {
@@ -73,9 +74,7 @@ object clairvoyant {
       val writer = actor {
         loop {
           react {
-            case Page(url, content) => {
-
-            }
+            case Page(url, content) => {}
             case STOP => exit
           }
         }
@@ -93,7 +92,6 @@ object clairvoyant {
           }
         }
       }
-
       val loaders = (0 to threads - 1) map { i => loader }
 
       val controller = actor {
@@ -117,6 +115,8 @@ object clairvoyant {
       controller ! STOP
       loaders.foreach(_ ! STOP)
       writer ! STOP
+
+      allURLs.foreach(println)
     }
   }
 }
