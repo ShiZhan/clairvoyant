@@ -63,24 +63,23 @@ object clairvoyant {
 
   val usage = "clairvoyant <local folder> <threads> <url ...>"
 
-  def main(args: Array[String]) = {
-    if (args.length < 3) {
-      println(usage)
-    } else {
-      val store = args(0)
-      val threads = args(1).toShort
-      val startURLs = args.drop(2).toList
+  def main(args: Array[String]) = if (args.length < 3) println(usage)
+  else {
+    val store = args(0)
+    val threads = args(1).toShort
+    val startURLs = args.drop(2).toList
 
-      val writer = actor {
-        loop {
-          react {
-            case Page(url, content) => {}
-            case STOP => exit
-          }
+    val writer = actor {
+      loop {
+        react {
+          case Page(url, content) => {}
+          case STOP => exit
         }
       }
+    }
 
-      def loader = actor {
+    val loaders = (0 to threads - 1) map { i =>
+      actor {
         loop {
           react {
             case url: String => {
@@ -92,31 +91,30 @@ object clairvoyant {
           }
         }
       }
-      val loaders = (0 to threads - 1) map { i => loader }
+    }
 
-      val controller = actor {
-        loop {
-          react {
-            case Link(urls) => urls.grouped(threads).foreach { ug =>
-              ug.zipWithIndex.foreach {
-                case (url, index) =>
-                  if (!crawled(url) & interested(url)) loaders(index) ! url
-              }
+    val controller = actor {
+      loop {
+        react {
+          case Link(urls) => urls.grouped(threads).foreach { ug =>
+            ug.zipWithIndex.foreach {
+              case (url, index) =>
+                if (!crawled(url) & interested(url)) loaders(index) ! url
             }
-            case STOP => exit
           }
+          case STOP => exit
         }
       }
-
-      controller ! Link(startURLs)
-
-      console
-
-      controller ! STOP
-      loaders.foreach(_ ! STOP)
-      writer ! STOP
-
-      allURLs.foreach(println)
     }
+
+    controller ! Link(startURLs)
+
+    console
+
+    controller ! STOP
+    loaders.foreach(_ ! STOP)
+    writer ! STOP
+
+    allURLs.foreach(println)
   }
 }
