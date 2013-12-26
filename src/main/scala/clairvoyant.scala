@@ -26,20 +26,21 @@ object Logging {
     else
       className
 
-  def getLogger(logging: AnyRef) =
-    LoggerFactory.getLogger(loggerNameForClass(logging.getClass.getName))
+  def getLogger(c: AnyRef) =
+    LoggerFactory.getLogger(loggerNameForClass(c.getClass.getName))
 }
 
 case class Page(uri: String, content: String)
 case class Link(links: List[String])
 case class STOP
 
-trait Parser {
+object Parser {
   private var traveled = collection.mutable.HashSet[String]()
   def crawled(url: String) = traveled.contains(url)
   def interested(url: String) = true
   def allURLs = traveled.iterator
-
+  // TODO: more link searching methods and filter (XPATH, regex)
+  // TODO: recognize relative path and translate it to absolute URL
   private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
   def load(url: String) = {
     traveled += url
@@ -54,8 +55,6 @@ trait Parser {
     }
   }
 }
-
-object Demo extends Parser {}
 
 object Console {
   val prompt = "> "
@@ -76,7 +75,7 @@ object Console {
 
 object clairvoyant extends Logging {
   import actors.Actor._
-  import Demo._
+  import Parser._
   import Console.console
 
   val usage = "clairvoyant <local folder> <concurrency> <url ...>"
