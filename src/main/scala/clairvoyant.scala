@@ -13,6 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+trait Logging {
+  val logger = Logging.getLogger(this)
+}
+
+object Logging {
+  import org.slf4j.LoggerFactory
+
+  def loggerNameForClass(className: String) =
+    if (className endsWith "$")
+      className.substring(0, className.length - 1)
+    else
+      className
+
+  def getLogger(logging: AnyRef) =
+    LoggerFactory.getLogger(loggerNameForClass(logging.getClass.getName))
+}
+
 case class Page(uri: String, content: String)
 case class Link(links: List[String])
 case class STOP
@@ -57,7 +74,7 @@ object Console {
   }
 }
 
-object clairvoyant {
+object clairvoyant extends Logging {
   import actors.Actor._
   import Demo._
   import Console.console
@@ -85,7 +102,7 @@ object clairvoyant {
           react {
             case url: String => {
               val (page, links) = load(url)
-              println("Loader [%d]: %s".format(i, url))
+              logger.info("Loader [{}]: {}", i, url)
               sender ! links
               writer ! page
             }
@@ -115,6 +132,6 @@ object clairvoyant {
     loaders.foreach(_ ! STOP)
     writer ! STOP
 
-    println("Traveled URI: " + allURLs.length)
+    logger.info("Traveled URI: [{}]", allURLs.length)
   }
 }
