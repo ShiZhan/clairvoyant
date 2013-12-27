@@ -35,13 +35,11 @@ case class Link(links: List[String])
 case class STOP
 
 object Parser {
-  import org.openqa.selenium.htmlunit.HtmlUnitDriver
-
   private var traveled = collection.mutable.HashSet[String]()
   def crawled(url: String) = traveled.contains(url)
   def allURLs = traveled.iterator
 
-  private val driver = new HtmlUnitDriver
+  private val driver = new org.openqa.selenium.htmlunit.HtmlUnitDriver
 
   // TODO: recognize relative path and translate it to absolute URL
   private def fixLink(link: String, domain: String) = ""
