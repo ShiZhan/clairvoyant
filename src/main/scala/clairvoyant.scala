@@ -35,17 +35,26 @@ case class Link(links: List[String])
 case class STOP
 
 object Parser {
+  import org.openqa.selenium.htmlunit.HtmlUnitDriver
+
   private var traveled = collection.mutable.HashSet[String]()
   def crawled(url: String) = traveled.contains(url)
-  def interested(url: String) = true
   def allURLs = traveled.iterator
-  // TODO: more link searching methods and filter (XPATH, regex)
+
+  private val driver = new HtmlUnitDriver
+
   // TODO: recognize relative path and translate it to absolute URL
+  private def fixLink(link: String, domain: String) = ""
+
+  // TODO: more link searching methods and filter (XPATH, regex)
   private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
+  private def getLink(page: String) = List[String]()
+
   def load(url: String) = {
     traveled += url
+    driver.get(url)
     try {
-      val content = io.Source.fromURL(url).mkString
+      val content = driver.getPageSource
       val links = linkRegex.findAllIn(content).matchData.toList.map(_.group(1)).distinct
       (Page(url, content), Link(links))
     } catch {
@@ -114,8 +123,8 @@ object clairvoyant extends Logging {
     val controller = actor {
       loop {
         react {
-          case Link(urls) => urls.filter(u => !crawled(u) & interested(u))
-            .grouped(concurrency).foreach {
+          case Link(urls) => urls.filter(u => !crawled(u)).grouped(concurrency)
+            .foreach {
               _.zipWithIndex.foreach { case (url, index) => loaders(index) ! url }
             }
           case STOP => exit
