@@ -37,6 +37,7 @@ case class STOP
 object Parser {
   import scala.collection.JavaConversions._
   import collection.mutable.HashSet
+  import java.net.URL
   import org.openqa.selenium.htmlunit.HtmlUnitDriver
 
   private var traveled = HashSet[String]()
@@ -44,15 +45,17 @@ object Parser {
   def allURLs = traveled.iterator
 
   private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
-  private val domain = """^(http|https)\:\/\/[^\/]*""".r
   private val linkXPATH = ""
 
   def load(url: String) = {
-    traveled += url
-    val root = domain.findFirstIn(url).getOrElse(url)
     val driver = new HtmlUnitDriver
-    driver.get(url)
     try {
+      val path = new URL(url).getPath
+      val root = if ("" == path) url else url.substring(0, url.lastIndexOf(path))
+      val cwd = if ("" == path) "/" else if (path.endsWith("/")) path
+      else path.substring(0, path.lastIndexOf("/") + 1)
+      driver.get(url)
+      traveled += url
       val content = driver.getPageSource
       //val rawLinks = driver.findElementsByXPath("//a/@href").map(_.toString).distinct
       val rawLinks = linkRegex.findAllIn(content).matchData.toList.map(_.group(1)).distinct
