@@ -35,30 +35,35 @@ case class Link(links: List[String])
 case class STOP
 
 object Parser {
-  private var traveled = collection.mutable.HashSet[String]()
+  import scala.collection.JavaConversions._
+  import collection.mutable.HashSet
+  import org.openqa.selenium.htmlunit.HtmlUnitDriver
+
+  private var traveled = HashSet[String]()
   def crawled(url: String) = traveled.contains(url)
   def allURLs = traveled.iterator
 
-  private val driver = new org.openqa.selenium.htmlunit.HtmlUnitDriver
-
-  // TODO: recognize relative path and translate it to absolute URL
-  private def fixLink(link: String, domain: String) = ""
-
-  // TODO: more link searching methods and filter (XPATH, regex)
   private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
-  private def getLink(page: String) = List[String]()
+  private val domain = """^(http|https)\:\/\/[^\/]*""".r
+  private val linkXPATH = ""
 
   def load(url: String) = {
     traveled += url
+    val root = domain.findFirstIn(url).getOrElse(url)
+    val driver = new HtmlUnitDriver
     driver.get(url)
     try {
       val content = driver.getPageSource
-      val links = linkRegex.findAllIn(content).matchData.toList.map(_.group(1)).distinct
+      //val rawLinks = driver.findElementsByXPath("//a/@href").map(_.toString).distinct
+      val rawLinks = linkRegex.findAllIn(content).matchData.toList.map(_.group(1)).distinct
+      val links = rawLinks.map(l => if (l.startsWith("/")) root + l else l).toList
       (Page(url, content), Link(links))
     } catch {
       case e: Exception =>
         System.err.println(e)
         (Page(url, ""), Link(List[String]()))
+    } finally {
+      driver.close
     }
   }
 }
