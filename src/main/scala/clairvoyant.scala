@@ -79,11 +79,9 @@ object Parser {
     }
   }
 
-  def load(url: String) = {
+  def readPage(url: String) = {
     val doc = Jsoup.connect(url).get
-    // TODO: add more link filter here, using selector
-    //       filters can be triggered by specified url
-    //       maybe a json configuration file is required
+    // TODO: a json configuration file is required
     val area =
       if (url == """http://shizhan.github.io/archive.html""")
         doc.select("div.content")
@@ -113,40 +111,62 @@ object Console {
   }
 }
 
-object clairvoyant extends Logging {
+object Spider extends Logging {
   import java.io.File
+  import io.Source
+  import util.parsing.json.JSON
   import actors.Actor._
-  import Parser._
+  import Parser.{ allURLs, crawled, readPage }
 
-  val usage = "clairvoyant <local folder> <concurrency> <url ...>"
+  case class SpiderConfig(
+    startURLs: List[String],
+    concurrency: Int,
+    filters: List[(String, String)],
+    folder: String)
 
-  def main(args: Array[String]) = if (args.length < 3) println(usage)
-  else {
-    val concurrency = args(1).toShort
-    val startURLs = args.drop(2).toList
-
-    val _name = args(0)
-    val _folder = new File(_name)
-    val folder =
-      if (_folder.exists) {
-        val _newName = _name + Hash.md5(compat.Platform.currentTime.toString)
-        new File(_newName).mkdir
-        _newName
-      } else {
-        _folder.mkdir
-        _name
+  def load(fileName: String) = {
+    try {
+      val fileContent = Source.fromFile(new File(fileName)).mkString
+      val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
+      val startURLs = config.get("start").get.asInstanceOf[List[String]]
+      val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
+      val filters = config.get("filters").get.asInstanceOf[Map[String, String]].toList
+      val _name = config.get("store").get.toString
+      val _folder = new File(_name)
+      val folder =
+        if (_folder.exists) {
+          val _newName = _name + Hash.md5(compat.Platform.currentTime.toString)
+          new File(_newName).mkdir
+          _newName
+        } else {
+          _folder.mkdir
+          _name
+        }
+      SpiderConfig(startURLs, concurrency, filters, folder)
+    } catch {
+      case e: Exception => {
+        println(e)
+        SpiderConfig(List[String](), 1, List(("", "")), "")
       }
+    }
+  }
 
+  case class SpiderInstance(
+    writer: actors.Actor,
+    loaders: Seq[actors.Actor],
+    controller: actors.Actor)
+
+  def run(config: SpiderConfig) = {
     val writer = actor {
       loop {
         react {
-          case page: Page => page.storeTo(folder)
+          case page: Page => page.storeTo(config.folder)
           case STOP => exit
         }
       }
     }
 
-    val loaders = (0 to concurrency - 1) map { i =>
+    val loaders = (0 to config.concurrency - 1) map { i =>
       actor {
         loop {
           react {
@@ -154,7 +174,7 @@ object clairvoyant extends Logging {
               logger.info("Loader [{}]: {}", i, url)
 
               try {
-                val (page, links) = load(url)
+                val (page, links) = readPage(url)
                 writer ! page
                 if (!links.isEmpty) sender ! links
               } catch {
@@ -170,7 +190,7 @@ object clairvoyant extends Logging {
     val controller = actor {
       loop {
         react {
-          case Link(urls) => urls.filter(u => !crawled(u)).grouped(concurrency)
+          case Link(urls) => urls.filter(u => !crawled(u)).grouped(config.concurrency)
             .foreach {
               _.zipWithIndex.foreach { case (url, index) => loaders(index) ! url }
             }
@@ -179,14 +199,43 @@ object clairvoyant extends Logging {
       }
     }
 
-    controller ! Link(startURLs)
+    controller ! Link(config.startURLs)
 
-    Console.console
+    SpiderInstance(writer, loaders, controller)
+  }
 
+  def stop(spider: SpiderInstance) = {
+    val SpiderInstance(writer, loaders, controller) = spider
     controller ! STOP
     loaders.foreach(_ ! STOP)
     writer ! STOP
-
     logger.info("Traveled URI: [{}]", allURLs.length)
+  }
+}
+
+object clairvoyant extends Logging {
+  val usage = """clairvoyant <spider>
+spider example:
+{
+  "start": ["http://shizhan.github.io/archive.html"],
+  "concurrency": 2,
+  "dalay": 1500,
+  "timeout": 10000,
+  "filters": {
+    "^http\:\/\/shizhan\.github\.io\/archive\.html$": "div.content",
+    "^http\:\/\/shizhan\.github\.io\/\d{4}\/\d{2}\/\d{2}\/.*": "div.page-header"
+  },
+  "store": "r:/shizhan_github_io"
+}
+"""
+
+  def main(args: Array[String]) = if (args.length < 1) println(usage)
+  else {
+    val config = Spider.load(args(0))
+    if (!config.startURLs.isEmpty) {
+      val spider = Spider.run(config)
+      Console.console
+      Spider.stop(spider)
+    } else println("spider config file error")
   }
 }
