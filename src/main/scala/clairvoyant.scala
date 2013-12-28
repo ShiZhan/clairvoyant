@@ -30,13 +30,20 @@ object Logging {
     LoggerFactory.getLogger(loggerNameForClass(c.getClass.getName))
 }
 
+object Hash {
+  import java.security.MessageDigest
+
+  def md5(input: String) =
+    MessageDigest.getInstance("MD5").digest(input.getBytes)
+      .map("%02x".format(_)).mkString
+}
+
 case class Page(uri: String, content: String) {
   import java.io.{ File, PrintWriter }
   import java.security.MessageDigest
+  import Hash.md5
 
-  val uriHash =
-    MessageDigest.getInstance("MD5").digest(uri.getBytes)
-      .map("%02x".format(_)).mkString
+  val uriHash = md5(uri)
 
   def storeTo(folder: String) = {
     val file = new File(folder + "/" + uriHash + ".html")
@@ -110,22 +117,30 @@ object clairvoyant extends Logging {
   import java.io.File
   import actors.Actor._
   import Parser._
-  import Console.console
 
   val usage = "clairvoyant <local folder> <concurrency> <url ...>"
 
   def main(args: Array[String]) = if (args.length < 3) println(usage)
   else {
-    val folderName = args(0)
     val concurrency = args(1).toShort
     val startURLs = args.drop(2).toList
-    val folder = new File(folderName)
-    if (folder.exists) exit else folder.mkdir
+
+    val _name = args(0)
+    val _folder = new File(_name)
+    val folder =
+      if (_folder.exists) {
+        val _newName = _name + Hash.md5(compat.Platform.currentTime.toString)
+        new File(_newName).mkdir
+        _newName
+      } else {
+        _folder.mkdir
+        _name
+      }
 
     val writer = actor {
       loop {
         react {
-          case page: Page => page.storeTo(folderName)
+          case page: Page => page.storeTo(folder)
           case STOP => exit
         }
       }
@@ -140,8 +155,8 @@ object clairvoyant extends Logging {
 
               try {
                 val (page, links) = load(url)
-                if (!links.isEmpty) sender ! links
                 writer ! page
+                if (!links.isEmpty) sender ! links
               } catch {
                 case e: Exception => println(e)
               }
@@ -166,7 +181,7 @@ object clairvoyant extends Logging {
 
     controller ! Link(startURLs)
 
-    console
+    Console.console
 
     controller ! STOP
     loaders.foreach(_ ! STOP)
