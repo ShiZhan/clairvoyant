@@ -31,7 +31,7 @@ object Logging {
 }
 
 case class Page(uri: String, content: String)
-case class Link(links: List[String])
+case class Link(links: List[String]) { def isEmpty = links.isEmpty }
 case class STOP
 
 object Parser {
@@ -44,12 +44,23 @@ object Parser {
   def crawled(url: String) = traveled.contains(url)
   def allURLs = traveled.iterator
 
-  private val linkRegex = "(?i)<a.+?href=\"(http.+?)\".*?>(.+?)</a>".r
-  private val linkXPATH = ""
+  def urlValid(url: String) = {
+    try {
+      new URL(url)
+      true
+    } catch {
+      case _: Exception => false
+    }
+  }
 
   def load(url: String) = {
     val doc = Jsoup.connect(url).get
-    val links = doc.select("a").iterator.map(_.attr("abs:href")).toList
+    // TODO: add more link filter here, using selector
+    //       filters can be triggered by specified url
+    //       maybe a json configuration file is required
+    val links =
+      doc.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
+    traveled += url
     (Page(url, doc.data), Link(links))
   }
 }
@@ -98,10 +109,15 @@ object clairvoyant extends Logging {
         loop {
           react {
             case url: String => {
-              val (page, links) = load(url)
               logger.info("Loader [{}]: {}", i, url)
-              sender ! links
-              writer ! page
+
+              try {
+                val (page, links) = load(url)
+                if (!links.isEmpty) sender ! links
+                writer ! page
+              } catch {
+                case e: Exception => println(e)
+              }
             }
             case STOP => exit
           }
