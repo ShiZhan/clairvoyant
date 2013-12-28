@@ -5,25 +5,7 @@
   <classpathentry kind="src" path="src\test\java" output="target\scala-2.10\test-classes"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.scala-lang\scala-library\jars\scala-library-2.10.3.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.scala-lang\scala-actors\jars\scala-actors-2.10.3.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.seleniumhq.webdriver\webdriver-common\jars\webdriver-common-0.9.7376.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.seleniumhq.webdriver\webdriver-selenium\jars\webdriver-selenium-0.9.7376.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.seleniumhq.selenium.client-drivers\selenium-java-client-driver\jars\selenium-java-client-driver-1.0.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.seleniumhq.webdriver\webdriver-htmlunit\jars\webdriver-htmlunit-0.9.7376.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\net.sourceforge.htmlunit\htmlunit\jars\htmlunit-2.6.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\xalan\xalan\jars\xalan-2.7.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\xalan\serializer\jars\serializer-2.7.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\xml-apis\xml-apis\jars\xml-apis-1.3.04.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-collections\commons-collections\jars\commons-collections-3.2.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-lang\commons-lang\jars\commons-lang-2.4.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-httpclient\commons-httpclient\jars\commons-httpclient-3.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-logging\commons-logging\jars\commons-logging-1.1.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-codec\commons-codec\jars\commons-codec-1.4.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\net.sourceforge.htmlunit\htmlunit-core-js\jars\htmlunit-core-js-2.6.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\xerces\xercesImpl\jars\xercesImpl-2.9.1.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\net.sourceforge.nekohtml\nekohtml\jars\nekohtml-1.9.13.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\net.sourceforge.cssparser\cssparser\jars\cssparser-0.9.5.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.w3c.css\sac\jars\sac-1.3.jar"/>
-  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-io\commons-io\jars\commons-io-1.4.jar"/>
+  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.jsoup\jsoup\jars\jsoup-1.7.3.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.slf4j\slf4j-api\jars\slf4j-api-1.7.5.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.slf4j\slf4j-log4j12\jars\slf4j-log4j12-1.7.5.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\log4j\log4j\bundles\log4j-1.2.17.jar"/>

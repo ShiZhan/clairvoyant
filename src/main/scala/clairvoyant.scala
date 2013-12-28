@@ -38,7 +38,7 @@ object Parser {
   import scala.collection.JavaConversions._
   import collection.mutable.HashSet
   import java.net.URL
-  import org.openqa.selenium.htmlunit.HtmlUnitDriver
+  import org.jsoup.Jsoup
 
   private var traveled = HashSet[String]()
   def crawled(url: String) = traveled.contains(url)
@@ -48,26 +48,9 @@ object Parser {
   private val linkXPATH = ""
 
   def load(url: String) = {
-    val driver = new HtmlUnitDriver
-    try {
-      val path = new URL(url).getPath
-      val root = if ("" == path) url else url.substring(0, url.lastIndexOf(path))
-      val cwd = if ("" == path) "/" else if (path.endsWith("/")) path
-      else path.substring(0, path.lastIndexOf("/") + 1)
-      driver.get(url)
-      traveled += url
-      val content = driver.getPageSource
-      //val rawLinks = driver.findElementsByXPath("//a/@href").map(_.toString).distinct
-      val rawLinks = linkRegex.findAllIn(content).matchData.toList.map(_.group(1)).distinct
-      val links = rawLinks.map(l => if (l.startsWith("/")) root + l else l).toList
-      (Page(url, content), Link(links))
-    } catch {
-      case e: Exception =>
-        System.err.println(e)
-        (Page(url, ""), Link(List[String]()))
-    } finally {
-      driver.close
-    }
+    val doc = Jsoup.connect(url).get
+    val links = doc.select("a").iterator.map(_.attr("abs:href")).toList
+    (Page(url, doc.data), Link(links))
   }
 }
 
