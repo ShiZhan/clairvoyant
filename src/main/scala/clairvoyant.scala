@@ -58,8 +58,13 @@ object Parser {
     // TODO: add more link filter here, using selector
     //       filters can be triggered by specified url
     //       maybe a json configuration file is required
+    val area =
+      if (url == """http://shizhan.github.io/archive.html""")
+        doc.select("div.content")
+      else
+        doc.select("div.page-header")
     val links =
-      doc.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
+      area.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
     traveled += url
     (Page(url, doc.data), Link(links))
   }
