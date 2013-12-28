@@ -31,11 +31,10 @@ object Logging {
 }
 
 object Hash {
-  import java.security.MessageDigest
+  private val md5Instance = java.security.MessageDigest.getInstance("MD5")
 
   def md5(input: String) =
-    MessageDigest.getInstance("MD5").digest(input.getBytes)
-      .map("%02x".format(_)).mkString
+    md5Instance.digest(input.getBytes).map("%02x".format(_)).mkString
 }
 
 case class Page(url: String, content: String) {
@@ -73,6 +72,7 @@ case class Parse(url: String) {
   def getPage = Page(url, doc.html)
 
   def getLink = {
+    // TODO: match filters
     val area =
       if (url == """http://shizhan.github.io/archive.html""")
         doc.select("div.content")
@@ -152,7 +152,7 @@ object Spider extends Logging {
         loop {
           react {
             case Link(urls) =>
-              urls.filter(u => !crawled(u)).grouped(concurrency).foreach {
+              urls.filter(!crawled(_)).grouped(concurrency).foreach {
                 _.zipWithIndex.foreach { case (url, index) => loaders(index) ! url }
               }
             case STOP => exit
@@ -227,14 +227,15 @@ spider example:
 }
 """
 
-  def main(args: Array[String]) = if (args.length < 1) println(usage)
-  else {
-    val spider = Spider.initialize(args(0))
-    if (!spider.startURLs.isEmpty) {
-      val spiderInstance = spider.run
-      Console.console
-      spiderInstance.stop
-      println("Traveled URI: " + spider.allURLs.length)
-    } else println("spider config file error")
-  }
+  def main(args: Array[String]) =
+    if (args.length < 1) println(usage)
+    else {
+      val spider = Spider.initialize(args(0))
+      if (!spider.startURLs.isEmpty) {
+        val spiderInstance = spider.run
+        Console.console
+        spiderInstance.stop
+        println("Traveled URI: " + spider.allURLs.length)
+      } else println("spider config error")
+    }
 }
