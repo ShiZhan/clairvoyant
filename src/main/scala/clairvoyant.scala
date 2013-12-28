@@ -30,8 +30,27 @@ object Logging {
     LoggerFactory.getLogger(loggerNameForClass(c.getClass.getName))
 }
 
-case class Page(uri: String, content: String)
-case class Link(links: List[String]) { def isEmpty = links.isEmpty }
+case class Page(uri: String, content: String) {
+  import java.io.{ File, PrintWriter }
+  import java.security.MessageDigest
+
+  val uriHash =
+    MessageDigest.getInstance("MD5").digest(uri.getBytes)
+      .map("%02x".format(_)).mkString
+
+  def storeTo(folder: String) = {
+    val file = new File(folder + "/" + uriHash + ".html")
+    val writer = new PrintWriter(file)
+    writer.println("<!-- " + uri + " -->")
+    writer.println(content)
+    writer.close
+  }
+}
+
+case class Link(links: List[String]) {
+  def isEmpty = links.isEmpty
+}
+
 case class STOP
 
 object Parser {
@@ -66,7 +85,7 @@ object Parser {
     val links =
       area.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
     traveled += url
-    (Page(url, doc.data), Link(links))
+    (Page(url, doc.html), Link(links))
   }
 }
 
@@ -88,6 +107,7 @@ object Console {
 }
 
 object clairvoyant extends Logging {
+  import java.io.File
   import actors.Actor._
   import Parser._
   import Console.console
@@ -96,14 +116,16 @@ object clairvoyant extends Logging {
 
   def main(args: Array[String]) = if (args.length < 3) println(usage)
   else {
-    val store = args(0)
+    val folderName = args(0)
     val concurrency = args(1).toShort
     val startURLs = args.drop(2).toList
+    val folder = new File(folderName)
+    if (folder.exists) exit else folder.mkdir
 
     val writer = actor {
       loop {
         react {
-          case Page(url, content) => {}
+          case page: Page => page.storeTo(folderName)
           case STOP => exit
         }
       }
