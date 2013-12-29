@@ -57,8 +57,11 @@ case class STOP
 
 case class Parse(url: String) {
   import collection.JavaConversions._
+  import org.jsoup.Jsoup
+  import org.jsoup.nodes.Document
+  import org.jsoup.select.Elements
 
-  private val doc = org.jsoup.Jsoup.connect(url).get
+  private val doc = Jsoup.connect(url).get
 
   private def urlValid(url: String) = {
     try {
@@ -71,17 +74,14 @@ case class Parse(url: String) {
 
   def getPage = Page(url, doc.html)
 
-  def getLink = {
-    // TODO: match filters
-    val area =
-      if (url == """http://shizhan.github.io/archive.html""")
-        doc.select("div.content")
-      else
-        doc.select("div.page-header")
-    val links =
-      area.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
-    Link(links)
-  }
+  def getLink =
+    Link(doc.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList)
+
+  def getLinkWith(filters: Spider.Filters) =
+    Link(filters.check(url).flatMap { selector =>
+      doc.select(selector)
+        .select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
+    })
 }
 
 object Spider extends Logging {
@@ -103,6 +103,13 @@ object Spider extends Logging {
 
       logger.info("STOP signal has been sent to all actors ...")
     }
+  }
+
+  val filterNone = (".*".r, "#ThisIdMatchNothing")
+  case class Filters(filters: List[(util.matching.Regex, String)]) {
+    def check(url: String) =
+      filters.filterNot { case (r, s) => r.findAllIn(url).isEmpty }
+        .map { case (r, s) => s }
   }
 
   case class Spider(
@@ -134,7 +141,7 @@ object Spider extends Logging {
                 try {
                   val result = Parse(url)
                   val page = result.getPage
-                  val links = result.getLink
+                  val links = result.getLinkWith(filters)
                   writer ! page
                   if (!links.isEmpty) sender ! links
                   traveled += url
@@ -164,12 +171,6 @@ object Spider extends Logging {
 
       SpiderInstance(writer, loaders, controller)
     }
-  }
-
-  type Filter = (util.matching.Regex, String)
-  val filterNone = (".*".r, "#ThisIdMatchNothing")
-  case class Filters(filters: List[Filter]) {
-
   }
 
   def initialize(fileName: String) = {
