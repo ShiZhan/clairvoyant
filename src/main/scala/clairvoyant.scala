@@ -13,45 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-trait Logging {
-  val logger = Logging.getLogger(this)
+object Console {
+  val prompt = "\n> "
+
+  def console: Unit = {
+    for (line <- io.Source.stdin.getLines) {
+      val output = line.split(" ").toList match {
+        case "exit" :: Nil => return
+        case "" :: Nil => ""
+        case _ => "Unrecognized command: [%s]".format(line)
+      }
+      print(output + prompt)
+    }
+  }
 }
 
-object Logging {
-  import org.slf4j.LoggerFactory
-
-  def loggerNameForClass(className: String) =
-    if (className endsWith "$")
-      className.substring(0, className.length - 1)
-    else
-      className
-
-  def getLogger(c: AnyRef) =
-    LoggerFactory.getLogger(loggerNameForClass(c.getClass.getName))
-}
-
-object Hash {
-  private val md5Instance = java.security.MessageDigest.getInstance("MD5")
-
-  def md5(input: String) =
-    md5Instance.digest(input.getBytes).map("%02x".format(_)).mkString
-}
-
-object Spider extends Logging {
+object Spider {
   import java.io.{ File, PrintWriter }
-  import java.net.URL
-  import io.Source
-  import collection.mutable.HashSet
   import collection.JavaConversions._
   import util.parsing.json.JSON
   import actors.Actor
   import actors.Actor._
-  import org.jsoup.Jsoup
+  import org.apache.commons.codec.digest.DigestUtils
   import org.apache.commons.validator.routines.UrlValidator
+
+  private val log = org.slf4j.LoggerFactory.getLogger(this.getClass)
 
   case class Page(url: String, content: String) {
     def storeTo(folder: String) = {
-      val file = new File(folder + "/" + Hash.md5(url) + ".html")
+      val file = new File(folder + "/" + DigestUtils.md5Hex(url) + ".html")
       val writer = new PrintWriter(file)
       writer.println("<!-- " + url + " -->")
       writer.println(content)
@@ -59,9 +49,7 @@ object Spider extends Logging {
     }
   }
 
-  case class Link(links: List[String]) {
-    def isEmpty = links.isEmpty
-  }
+  case class Link(links: List[String]) { def isEmpty = links.isEmpty }
 
   case class STOP
 
@@ -70,11 +58,12 @@ object Spider extends Logging {
       controller ! STOP
       loaders.foreach(_ ! STOP)
       writer ! STOP
-      logger.info("STOP signal has been sent to all actors ...")
+
+      log.info("STOP signal has been sent to all actors ...")
     }
   }
 
-  val filterNone = (".*".r, "#ThisIdMatchNothing")
+  private val filterNone = (".*".r, "#ThisIdMatchNothing")
   case class Filters(filters: List[(util.matching.Regex, String)]) {
     def check(url: String) =
       filters.filterNot { case (r, s) => r.findAllIn(url).isEmpty }
@@ -85,7 +74,7 @@ object Spider extends Logging {
   private val httpValidator = new UrlValidator(httpSchemes)
 
   case class Parse(url: String, timeout: Int) {
-    private val doc = Jsoup.parse(new URL(url), timeout)
+    private val doc = org.jsoup.Jsoup.parse(new java.net.URL(url), timeout)
 
     def getPage = Page(url, doc.html)
 
@@ -101,7 +90,7 @@ object Spider extends Logging {
 
   case class Spider(startURLs: List[String], concurrency: Int,
     delay: Int, timeout: Int, filters: Filters, folder: String) {
-    private var traveled = HashSet[String]()
+    private var traveled = collection.mutable.HashSet[String]()
     def crawled(url: String) = traveled.contains(url)
     def allURLs = traveled.iterator
 
@@ -120,7 +109,7 @@ object Spider extends Logging {
           loop {
             react {
               case url: String => {
-                logger.info("Loader [{}]: {}", i, url)
+                log.info("Loader [{}]: {}", i, url)
 
                 try {
                   val result = Parse(url, timeout)
@@ -165,7 +154,7 @@ object Spider extends Logging {
 
   def initialize(fileName: String) = {
     try {
-      val fileContent = Source.fromFile(new File(fileName)).mkString
+      val fileContent = io.Source.fromFile(new File(fileName)).mkString
       val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
       val startURLs = config.get("start").get.asInstanceOf[List[String]]
       val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
@@ -177,15 +166,16 @@ object Spider extends Logging {
       val _folder = new File(_fname)
       val folder =
         if (_folder.exists)
-          new File(_fname + "_" + Hash.md5(compat.Platform.currentTime.toString))
+          new File(_fname + "_" +
+            DigestUtils.md5Hex(compat.Platform.currentTime.toString))
         else _folder
       folder.mkdir
 
-      logger.info("Spider [{}] initialized", fileName)
-      logger.info("Start URL: [{}]", startURLs.mkString("; "))
-      logger.info("(concurrency, delay, timeout): [{}]", (concurrency, delay, timeout))
-      logger.info("Filter total: [{}]", filters.length)
-      logger.info("Storage: [{}]", folder.getAbsolutePath)
+      log.info("Spider [{}] initialized", fileName)
+      log.info("Start URL: [{}]", startURLs.mkString("; "))
+      log.info("(concurrency, delay, timeout): [{}]", (concurrency, delay, timeout))
+      log.info("Filter total: [{}]", filters.length)
+      log.info("Storage: [{}]", folder.getAbsolutePath)
 
       Spider(startURLs, concurrency, delay, timeout,
         Filters(filters), folder.getAbsolutePath)
@@ -198,24 +188,9 @@ object Spider extends Logging {
   }
 }
 
-object Console {
-  val prompt = "> "
-  def console: Unit = {
-    for (line <- io.Source.stdin.getLines) {
-      val output = line.split(" ").toList match {
-        case "exit" :: Nil => return
-        case "" :: Nil => null
-        case _ => "Unrecognized command: [%s]".format(line)
-      }
-      if (null != output) println(output)
-      print(prompt)
-    }
-  }
-}
-
-object clairvoyant extends Logging {
+object clairvoyant {
   val demoJson = getClass.getResourceAsStream("demo.json")
-  val usage = "clairvoyant <spider>\n\nSpider JSON example:" +
+  val usage = "clairvoyant <spider>\n\nSpider JSON example:\n" +
     io.Source.fromInputStream(demoJson).mkString
 
   def main(args: Array[String]) =

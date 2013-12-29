@@ -5,6 +5,7 @@
   <classpathentry kind="src" path="src\test\java" output="target\scala-2.10\test-classes"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.scala-lang\scala-library\jars\scala-library-2.10.3.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\org.scala-lang\scala-actors\jars\scala-actors-2.10.3.jar"/>
+  <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-codec\commons-codec\jars\commons-codec-1.8.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-validator\commons-validator\jars\commons-validator-1.4.0.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-beanutils\commons-beanutils\jars\commons-beanutils-1.8.3.jar"/>
   <classpathentry kind="lib" path="d:\java\sbt\.ivy2\cache\commons-logging\commons-logging\jars\commons-logging-1.1.1.jar"/>
