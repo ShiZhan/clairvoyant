@@ -4,7 +4,7 @@ A conservative spider [download](https://dl.dropboxusercontent.com/u/70916622/cl
 
 The word **conservative** here stands for:
 
-1. links will only be gathered from specified document area, e.g.: a few "div"s or "table"s.
+1. links will only be gathered from specified document area, e.g.: a few "div"s or "table"s, HTML parsing based on [jsoup](http://jsoup.org/).
 2. use only **white list** to direct the crawling path, the spider will not go elsewhere, strictly limit the searching boundary.
 3. simple to use, locate and type `java -jar clairvoyant-assembly-1.0.jar` to see the help information, write **json**, then go.
 
