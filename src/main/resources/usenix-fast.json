@@ -1,0 +1,10 @@
+{
+  "start": ["https://www.usenix.org/conference/fast14/technical-sessions"],
+  "concurrency": 2,
+  "delay": 1500,
+  "timeout": 10000,
+  "filters": {
+    "^https://www.usenix.org/conference/fast14/technical-sessions$": "div.content-wrapper.clearfix"
+  },
+  "store": "r:/fast2014"
+}
