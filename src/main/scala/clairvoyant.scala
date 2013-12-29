@@ -37,58 +37,33 @@ object Hash {
     md5Instance.digest(input.getBytes).map("%02x".format(_)).mkString
 }
 
-case class Page(url: String, content: String) {
-  import java.io.{ File, PrintWriter }
-
-  def storeTo(folder: String) = {
-    val file = new File(folder + "/" + Hash.md5(url) + ".html")
-    val writer = new PrintWriter(file)
-    writer.println("<!-- " + url + " -->")
-    writer.println(content)
-    writer.close
-  }
-}
-
-case class Link(links: List[String]) {
-  def isEmpty = links.isEmpty
-}
-
-case class STOP
-
-case class Parse(url: String, timeout: Int) {
-  import collection.JavaConversions._
-  import java.net.URL
-
-  private val doc = org.jsoup.Jsoup.parse(new URL(url), timeout)
-
-  private def urlValid(url: String) = {
-    try {
-      new URL(url)
-      true
-    } catch {
-      case _: Exception => false
-    }
-  }
-
-  def getPage = Page(url, doc.html)
-
-  def getLink =
-    Link(doc.select("a").iterator.map(_.attr("abs:href"))
-      .filter(urlValid).toList)
-
-  def getLinkWith(filters: Spider.Filters) =
-    Link(filters.check(url).flatMap { selector =>
-      doc.select(selector).iterator.map(_.attr("abs:href"))
-    }.filter(urlValid).toList)
-}
-
 object Spider extends Logging {
-  import java.io.File
+  import java.io.{ File, PrintWriter }
+  import java.net.URL
   import io.Source
   import collection.mutable.HashSet
+  import collection.JavaConversions._
   import util.parsing.json.JSON
   import actors.Actor
   import actors.Actor._
+  import org.jsoup.Jsoup
+  import org.apache.commons.validator.routines.UrlValidator
+
+  case class Page(url: String, content: String) {
+    def storeTo(folder: String) = {
+      val file = new File(folder + "/" + Hash.md5(url) + ".html")
+      val writer = new PrintWriter(file)
+      writer.println("<!-- " + url + " -->")
+      writer.println(content)
+      writer.close
+    }
+  }
+
+  case class Link(links: List[String]) {
+    def isEmpty = links.isEmpty
+  }
+
+  case class STOP
 
   case class SpiderInstance(writer: Actor, loaders: Seq[Actor], controller: Actor) {
     def stop = {
@@ -104,6 +79,24 @@ object Spider extends Logging {
     def check(url: String) =
       filters.filterNot { case (r, s) => r.findAllIn(url).isEmpty }
         .map { case (r, s) => s }
+  }
+
+  private val httpSchemes = Array("http", "https")
+  private val httpValidator = new UrlValidator(httpSchemes)
+
+  case class Parse(url: String, timeout: Int) {
+    private val doc = Jsoup.parse(new URL(url), timeout)
+
+    def getPage = Page(url, doc.html)
+
+    def getLink =
+      Link(doc.select("a").iterator.map(_.attr("abs:href"))
+        .filter(httpValidator.isValid).toList)
+
+    def getLinkWith(filters: Filters) =
+      Link(filters.check(url).flatMap { selector =>
+        doc.select(selector).iterator.map(_.attr("abs:href"))
+      }.filter(httpValidator.isValid).toList)
   }
 
   case class Spider(startURLs: List[String], concurrency: Int,
