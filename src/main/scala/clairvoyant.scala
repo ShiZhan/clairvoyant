@@ -208,8 +208,8 @@ object Console {
 }
 
 object clairvoyant extends Logging {
-  val demoJson = getClass.getResource("demo.json")
-  val demo = io.Source.fromFile(demoJson.getFile.toString).mkString
+  val demoJson = getClass.getResourceAsStream("demo.json")
+  val demo = io.Source.fromInputStream(demoJson).mkString
   val usage = "clairvoyant <spider>\n\nSpider JSON example:" + demo
 
   def main(args: Array[String]) =
