@@ -208,20 +208,9 @@ object Console {
 }
 
 object clairvoyant extends Logging {
-  val usage = """clairvoyant <spider>
-spider example:
-{
-  "start": ["http://shizhan.github.io/archive.html"],
-  "concurrency": 2,
-  "delay": 1500,
-  "timeout": 10000,
-  "filters": {
-    "^http://shizhan.github.io/archive.html$": "div.content",
-    "^http://shizhan.github.io/\d{4}/\d{2}/\d{2}/.*": "div.page-header"
-  },
-  "store": "r:/shizhan_github_io"
-}
-"""
+  val demoJson = getClass.getResource("demo.json")
+  val demo = io.Source.fromFile(demoJson.getFile.toString).mkString
+  val usage = "clairvoyant <spider>\n\nSpider JSON example:" + demo
 
   def main(args: Array[String]) =
     if (args.length < 1) println(usage)
