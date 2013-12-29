@@ -107,7 +107,7 @@ object Spider extends Logging {
   }
 
   case class Spider(startURLs: List[String], concurrency: Int,
-    filters: Filters, folder: String) {
+    delay: Int, timeout: Int, filters: Filters, folder: String) {
     private var traveled = HashSet[String]()
     def crawled(url: String) = traveled.contains(url)
     def allURLs = traveled.iterator
@@ -171,6 +171,7 @@ object Spider extends Logging {
       val startURLs = config.get("start").get.asInstanceOf[List[String]]
       val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
       val delay = config.get("delay").get.asInstanceOf[Double].toInt
+      val timeout = config.get("timeout").get.asInstanceOf[Double].toInt
       val filters = config.get("filters").get.asInstanceOf[Map[String, String]].toList
         .map { case (r, s) => (r.r, s) }
       val _fname = config.get("store").get.toString
@@ -180,11 +181,18 @@ object Spider extends Logging {
           new File(_fname + "_" + Hash.md5(compat.Platform.currentTime.toString))
         else _folder
       folder.mkdir
-      Spider(startURLs, concurrency, Filters(filters), folder.getAbsolutePath)
+
+      logger.info("Spider [{}] initialized", fileName)
+      logger.info("Start URL: [{}]", startURLs.mkString("; "))
+      logger.info("(concurrency, delay, timeout): [{}]", (concurrency, delay, timeout))
+      logger.info("Filter total: [{}]", filters.length)
+      logger.info("Storage: [{}]", folder.getAbsolutePath)
+
+      Spider(startURLs, concurrency, delay, timeout, Filters(filters), folder.getAbsolutePath)
     } catch {
       case e: Exception => {
         println(e)
-        Spider(List[String](), 1, Filters(List(filterNone)), ".")
+        Spider(List[String](), 1, 0, 0, Filters(List(filterNone)), ".")
       }
     }
   }
