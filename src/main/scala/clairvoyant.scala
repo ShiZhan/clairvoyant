@@ -150,8 +150,14 @@ object Spider extends Logging {
         loop {
           react {
             case Link(urls) =>
-              urls.filter(!crawled(_)).grouped(concurrency).foreach {
-                _.zipWithIndex.foreach { case (url, index) => loaders(index) ! url }
+              urls.grouped(concurrency).foreach {
+                _.zipWithIndex.foreach {
+                  case (url, index) =>
+                    if (!crawled(url)) {
+                      loaders(index) ! url
+                      Thread.sleep(delay)
+                    }
+                }
               }
             case STOP => exit
           }
