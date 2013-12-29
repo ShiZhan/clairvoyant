@@ -76,9 +76,9 @@ case class Parse(url: String, timeout: Int) {
     Link(doc.select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList)
 
   def getLinkWith(filters: Spider.Filters) =
-    Link(filters.check(url).flatMap { selector =>
-      doc.select(selector)
-        .select("a").iterator.map(_.attr("abs:href")).filter(urlValid).toList
+    Link(filters.check(url).flatMap {
+      selector =>
+        doc.select(selector).iterator.map(_.attr("abs:href")).filter(urlValid).toList
     })
 }
 

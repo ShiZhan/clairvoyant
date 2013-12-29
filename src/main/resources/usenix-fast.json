@@ -4,7 +4,7 @@
   "delay": 1500,
   "timeout": 10000,
   "filters": {
-    "^https://www.usenix.org/conference/fast14/technical-sessions$": "div.content-wrapper.clearfix"
+    "^https://www.usenix.org/conference/fast14/technical-sessions$": "div.tech-schedule a"
   },
   "store": "r:/fast2014"
 }
