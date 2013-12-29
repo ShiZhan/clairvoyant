@@ -57,12 +57,13 @@ case class STOP
 
 case class Parse(url: String, timeOut: Int) {
   import collection.JavaConversions._
+  import java.net.URL
 
-  private val doc = org.jsoup.Jsoup.parse(new java.net.URL(url), timeOut)
+  private val doc = org.jsoup.Jsoup.parse(new URL(url), timeOut)
 
   private def urlValid(url: String) = {
     try {
-      new java.net.URL(url)
+      new URL(url)
       true
     } catch {
       case _: Exception => false
@@ -94,7 +95,6 @@ object Spider extends Logging {
       controller ! STOP
       loaders.foreach(_ ! STOP)
       writer ! STOP
-
       logger.info("STOP signal has been sent to all actors ...")
     }
   }
