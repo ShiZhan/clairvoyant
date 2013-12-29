@@ -202,7 +202,6 @@ object Console {
   val prompt = "> "
 
   def console: Unit = {
-    print(prompt)
     for (line <- io.Source.stdin.getLines) {
       val output = line.split(" ").toList match {
         case "exit" :: Nil => return
