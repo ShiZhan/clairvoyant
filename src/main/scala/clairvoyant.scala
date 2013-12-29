@@ -108,7 +108,7 @@ object Spider extends Logging {
   case class Spider(
     startURLs: List[String],
     concurrency: Int,
-    filters: List[(String, String)],
+    filters: Filters,
     folder: String) {
     private var traveled = HashSet[String]()
     def crawled(url: String) = traveled.contains(url)
@@ -166,6 +166,12 @@ object Spider extends Logging {
     }
   }
 
+  type Filter = (util.matching.Regex, String)
+  val filterNone = (".*".r, "#ThisIdMatchNothing")
+  case class Filters(filters: List[Filter]) {
+
+  }
+
   def initialize(fileName: String) = {
     try {
       val fileContent = Source.fromFile(new File(fileName)).mkString
@@ -173,22 +179,19 @@ object Spider extends Logging {
       val startURLs = config.get("start").get.asInstanceOf[List[String]]
       val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
       val filters = config.get("filters").get.asInstanceOf[Map[String, String]].toList
-      val _name = config.get("store").get.toString
-      val _folder = new File(_name)
+        .map { case (r, s) => (r.r, s) }
+      val _fname = config.get("store").get.toString
+      val _folder = new File(_fname)
       val folder =
-        if (_folder.exists) {
-          val _newName = _name + Hash.md5(compat.Platform.currentTime.toString)
-          new File(_newName).mkdir
-          _newName
-        } else {
-          _folder.mkdir
-          _name
-        }
-      Spider(startURLs, concurrency, filters, folder)
+        if (_folder.exists)
+          new File(_fname + "_" + Hash.md5(compat.Platform.currentTime.toString))
+        else _folder
+      folder.mkdir
+      Spider(startURLs, concurrency, Filters(filters), folder.getAbsolutePath)
     } catch {
       case e: Exception => {
         println(e)
-        Spider(List[String](), 1, List(("", "")), "")
+        Spider(List[String](), 1, Filters(List(filterNone)), ".")
       }
     }
   }
