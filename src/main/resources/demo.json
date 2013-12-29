@@ -1,7 +1,7 @@
 {
   "start": ["http://shizhan.github.io/archive.html"],
   "concurrency": 2,
-  "dalay": 1500,
+  "delay": 1500,
   "timeout": 10000,
   "filters": {
     "^http://shizhan.github.io/archive.html$": "div.content",

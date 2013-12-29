@@ -106,8 +106,8 @@ object Spider extends Logging {
         .map { case (r, s) => s }
   }
 
-  case class Spider(
-    startURLs: List[String], concurrency: Int, filters: Filters, folder: String) {
+  case class Spider(startURLs: List[String], concurrency: Int,
+    filters: Filters, folder: String) {
     private var traveled = HashSet[String]()
     def crawled(url: String) = traveled.contains(url)
     def allURLs = traveled.iterator
@@ -170,6 +170,7 @@ object Spider extends Logging {
       val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
       val startURLs = config.get("start").get.asInstanceOf[List[String]]
       val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
+      val delay = config.get("delay").get.asInstanceOf[Double].toInt
       val filters = config.get("filters").get.asInstanceOf[Map[String, String]].toList
         .map { case (r, s) => (r.r, s) }
       val _fname = config.get("store").get.toString
@@ -212,7 +213,7 @@ spider example:
 {
   "start": ["http://shizhan.github.io/archive.html"],
   "concurrency": 2,
-  "dalay": 1500,
+  "delay": 1500,
   "timeout": 10000,
   "filters": {
     "^http://shizhan.github.io/archive.html$": "div.content",
