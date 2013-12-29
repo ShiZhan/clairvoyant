@@ -1,0 +1,10 @@
+{
+  "start": ["http://www2013.org/program/"],
+  "concurrency": 2,
+  "delay": 1500,
+  "timeout": 10000,
+  "filters": {
+    "^http://www2013.org/program/": "section > section > section > section > p"
+  },
+  "store": "r:/www2013"
+}

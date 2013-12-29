@@ -55,11 +55,11 @@ case class Link(links: List[String]) {
 
 case class STOP
 
-case class Parse(url: String, timeOut: Int) {
+case class Parse(url: String, timeout: Int) {
   import collection.JavaConversions._
   import java.net.URL
 
-  private val doc = org.jsoup.Jsoup.parse(new URL(url), timeOut)
+  private val doc = org.jsoup.Jsoup.parse(new URL(url), timeout)
 
   private def urlValid(url: String) = {
     try {
