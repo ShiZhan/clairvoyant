@@ -55,10 +55,10 @@ case class Link(links: List[String]) {
 
 case class STOP
 
-case class Parse(url: String) {
+case class Parse(url: String, timeOut: Int) {
   import collection.JavaConversions._
 
-  private val doc = org.jsoup.Jsoup.connect(url).get
+  private val doc = org.jsoup.Jsoup.parse(new java.net.URL(url), timeOut)
 
   private def urlValid(url: String) = {
     try {
@@ -130,7 +130,7 @@ object Spider extends Logging {
                 logger.info("Loader [{}]: {}", i, url)
 
                 try {
-                  val result = Parse(url)
+                  val result = Parse(url, timeout)
                   val page = result.getPage
                   val links = result.getLinkWith(filters)
                   writer ! page
@@ -194,7 +194,8 @@ object Spider extends Logging {
       logger.info("Filter total: [{}]", filters.length)
       logger.info("Storage: [{}]", folder.getAbsolutePath)
 
-      Spider(startURLs, concurrency, delay, timeout, Filters(filters), folder.getAbsolutePath)
+      Spider(startURLs, concurrency, delay, timeout,
+        Filters(filters), folder.getAbsolutePath)
     } catch {
       case e: Exception => {
         println(e)
@@ -206,7 +207,6 @@ object Spider extends Logging {
 
 object Console {
   val prompt = "> "
-
   def console: Unit = {
     for (line <- io.Source.stdin.getLines) {
       val output = line.split(" ").toList match {
@@ -222,8 +222,8 @@ object Console {
 
 object clairvoyant extends Logging {
   val demoJson = getClass.getResourceAsStream("demo.json")
-  val demo = io.Source.fromInputStream(demoJson).mkString
-  val usage = "clairvoyant <spider>\n\nSpider JSON example:" + demo
+  val usage = "clairvoyant <spider>\n\nSpider JSON example:" +
+    io.Source.fromInputStream(demoJson).mkString
 
   def main(args: Array[String]) =
     if (args.length < 1) println(usage)
