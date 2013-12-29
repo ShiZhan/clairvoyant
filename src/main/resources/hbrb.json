@@ -1,0 +1,11 @@
+{
+  "start": ["http://hbrb.cnhubei.com/HTML/hbrb/20131229/menu.html"],
+  "concurrency": 3,
+  "delay": 1500,
+  "timeout": 10000,
+  "filters": {
+    "^http://hbrb.cnhubei.com/HTML/hbrb/20131229/menu.html": "a",
+    "^http://hbrb.cnhubei.com/HTML/hbrb/20131229/.*.html": "map[name=FPMap0] area"
+  },
+  "store": "r:/hbrb20131229"
+}
