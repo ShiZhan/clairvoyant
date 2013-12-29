@@ -1,6 +1,6 @@
 clairvoyant
 ===========
-A conservative spider [download](https://dl.dropboxusercontent.com/u/70916622/clairvoyant-assembly-1.0.jar).
+A conservative spider [download](http://goo.gl/18obNG).
 
 The word **conservative** here stands for:
 
