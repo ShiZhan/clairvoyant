@@ -57,11 +57,8 @@ case class STOP
 
 case class Parse(url: String) {
   import collection.JavaConversions._
-  import org.jsoup.Jsoup
-  import org.jsoup.nodes.Document
-  import org.jsoup.select.Elements
 
-  private val doc = Jsoup.connect(url).get
+  private val doc = org.jsoup.Jsoup.connect(url).get
 
   private def urlValid(url: String) = {
     try {
@@ -92,10 +89,7 @@ object Spider extends Logging {
   import actors.Actor
   import actors.Actor._
 
-  case class SpiderInstance(
-    writer: Actor,
-    loaders: Seq[Actor],
-    controller: Actor) {
+  case class SpiderInstance(writer: Actor, loaders: Seq[Actor], controller: Actor) {
     def stop = {
       controller ! STOP
       loaders.foreach(_ ! STOP)
@@ -113,10 +107,7 @@ object Spider extends Logging {
   }
 
   case class Spider(
-    startURLs: List[String],
-    concurrency: Int,
-    filters: Filters,
-    folder: String) {
+    startURLs: List[String], concurrency: Int, filters: Filters, folder: String) {
     private var traveled = HashSet[String]()
     def crawled(url: String) = traveled.contains(url)
     def allURLs = traveled.iterator
