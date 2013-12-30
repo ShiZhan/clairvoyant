@@ -36,15 +36,26 @@ object Spider {
   import actors.Actor._
   import org.apache.commons.codec.digest.DigestUtils
   import org.apache.commons.validator.routines.UrlValidator
+  import org.jsoup.Jsoup
+  import org.jsoup.nodes.Document
 
   private val log = org.slf4j.LoggerFactory.getLogger(this.getClass)
 
-  case class Page(url: String, content: String) {
+  case class Page(url: String, document: Document) {
+    def getLink =
+      Link(document.select("a").iterator.map(_.attr("abs:href"))
+        .filter(httpValidator.isValid).toList)
+
+    def getLinkWith(filters: Filters) =
+      Link(filters.check(url).flatMap { selector =>
+        document.select(selector).iterator.map(_.attr("abs:href"))
+      }.filter(httpValidator.isValid).toList)
+
     def storeTo(folder: String) = {
       val file = new File(folder + "/" + DigestUtils.md5Hex(url) + ".html")
       val writer = new PrintWriter(file)
       writer.println("<!-- " + url + " -->")
-      writer.println(content)
+      writer.println(document.html)
       writer.close
     }
   }
@@ -73,21 +84,6 @@ object Spider {
   private val httpSchemes = Array("http", "https")
   private val httpValidator = new UrlValidator(httpSchemes)
 
-  case class Parse(url: String, timeout: Int) {
-    private val doc = org.jsoup.Jsoup.parse(new java.net.URL(url), timeout)
-
-    def getPage = Page(url, doc.html)
-
-    def getLink =
-      Link(doc.select("a").iterator.map(_.attr("abs:href"))
-        .filter(httpValidator.isValid).toList)
-
-    def getLinkWith(filters: Filters) =
-      Link(filters.check(url).flatMap { selector =>
-        doc.select(selector).iterator.map(_.attr("abs:href"))
-      }.filter(httpValidator.isValid).toList)
-  }
-
   case class Spider(startURLs: List[String], concurrency: Int,
     delay: Int, timeout: Int, filters: Filters, folder: String) {
     private var traveled = collection.mutable.HashSet[String]()
@@ -112,9 +108,9 @@ object Spider {
                 log.info("Loader [{}]: {}", i, url)
 
                 try {
-                  val result = Parse(url, timeout)
-                  val page = result.getPage
-                  val links = result.getLinkWith(filters)
+                  val doc = Jsoup.parse(new java.net.URL(url), timeout)
+                  val page = Page(url, doc)
+                  val links = page.getLinkWith(filters)
                   writer ! page
                   if (!links.isEmpty) sender ! links
                   traveled += url
@@ -152,7 +148,7 @@ object Spider {
     }
   }
 
-  def initialize(fileName: String) = {
+  def load(fileName: String) = {
     try {
       val fileContent = io.Source.fromFile(new File(fileName)).mkString
       val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
@@ -196,7 +192,7 @@ object clairvoyant {
   def main(args: Array[String]) =
     if (args.length < 1) println(usage)
     else {
-      val spider = Spider.initialize(args(0))
+      val spider = Spider.load(args(0))
       if (!spider.startURLs.isEmpty) {
         val spiderInstance = spider.run
         Console.console
