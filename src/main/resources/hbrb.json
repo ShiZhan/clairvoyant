@@ -1,11 +1,19 @@
 {
-  "start": ["http://hbrb.cnhubei.com/HTML/hbrb/20131229/menu.html"],
+  "start": [
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131215/menu.html",
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131216/menu.html",
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131217/menu.html",
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131218/menu.html",
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131219/menu.html",
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131220/menu.html",
+    "http://hbrb.cnhubei.com/HTML/hbrb/20131221/menu.html"  
+  ],
   "concurrency": 3,
   "delay": 1500,
   "timeout": 10000,
   "filters": {
-    "^http://hbrb.cnhubei.com/HTML/hbrb/20131229/menu.html": "a",
-    "^http://hbrb.cnhubei.com/HTML/hbrb/20131229/.*.html": "map[name=FPMap0] area"
+    "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/menu.html": "a",
+    "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/.*.html": "map[name=FPMap0] area"
   },
-  "store": "r:/hbrb20131229"
+  "store": "r:/hbrb20131215to1221"
 }
