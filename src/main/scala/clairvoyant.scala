@@ -41,14 +41,17 @@ object Spider {
 
   private val log = org.slf4j.LoggerFactory.getLogger(this.getClass)
 
+  private val httpSchemes = Array("http", "https")
+  private val httpValidator = new UrlValidator(httpSchemes)
+
   case class Page(url: String, document: Document) {
     def getLink =
-      Link(document.select("a").iterator.map(_.attr("abs:href"))
+      Link(document.select("a").map(_.attr("abs:href"))
         .filter(httpValidator.isValid).toList)
 
     def getLinkWith(filters: Filters) =
       Link(filters.check(url).flatMap { selector =>
-        document.select(selector).iterator.map(_.attr("abs:href"))
+        document.select(selector).map(_.attr("abs:href"))
       }.filter(httpValidator.isValid).toList)
 
     def storeTo(folder: String) = {
@@ -69,7 +72,6 @@ object Spider {
       controller ! STOP
       loaders.foreach(_ ! STOP)
       writer ! STOP
-
       log.info("STOP signal has been sent to all actors ...")
     }
   }
@@ -80,9 +82,6 @@ object Spider {
       filters.filterNot { case (r, s) => r.findAllIn(url).isEmpty }
         .map { case (r, s) => s }
   }
-
-  private val httpSchemes = Array("http", "https")
-  private val httpValidator = new UrlValidator(httpSchemes)
 
   case class Spider(startURLs: List[String], concurrency: Int,
     delay: Int, timeout: Int, filters: Filters, folder: String) {
@@ -106,7 +105,6 @@ object Spider {
             react {
               case url: String => {
                 log.info("Loader [{}]: {}", i, url)
-
                 try {
                   val doc = Jsoup.parse(new java.net.URL(url), timeout)
                   val page = Page(url, doc)
