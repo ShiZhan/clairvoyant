@@ -44,6 +44,13 @@ object Spider {
   private val httpSchemes = Array("http", "https")
   private val httpValidator = new UrlValidator(httpSchemes)
 
+  private val filterNone = (".*".r, "#ThisIdMatchNothing")
+  case class Filters(filters: List[(util.matching.Regex, String)]) {
+    def check(url: String) = filters
+      .filterNot { case (r, s) => r.findAllIn(url).isEmpty }
+      .map { case (r, s) => s }
+  }
+
   case class Page(url: String, document: Document) {
     def getLink =
       Link(document.select("a").map(_.attr("abs:href"))
@@ -52,7 +59,7 @@ object Spider {
     def getLinkWith(filters: Filters) =
       Link(filters.check(url).flatMap { selector =>
         document.select(selector).map(_.attr("abs:href"))
-      }.filter(httpValidator.isValid).toList)
+      }.filter(httpValidator.isValid))
 
     def storeTo(folder: String) = {
       val file = new File(folder + "/" + DigestUtils.md5Hex(url) + ".html")
@@ -74,13 +81,6 @@ object Spider {
       writer ! STOP
       log.info("STOP signal has been sent to all actors ...")
     }
-  }
-
-  private val filterNone = (".*".r, "#ThisIdMatchNothing")
-  case class Filters(filters: List[(util.matching.Regex, String)]) {
-    def check(url: String) =
-      filters.filterNot { case (r, s) => r.findAllIn(url).isEmpty }
-        .map { case (r, s) => s }
   }
 
   case class Spider(startURLs: List[String], concurrency: Int,
