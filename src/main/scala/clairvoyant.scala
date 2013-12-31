@@ -174,10 +174,7 @@ object Spider {
       Spider(startURLs, concurrency, delay, timeout,
         Filters(filters), folder.getAbsolutePath)
     } catch {
-      case e: Exception => {
-        println(e)
-        Spider(List[String](), 1, 0, 0, Filters(List(filterNone)), ".")
-      }
+      case e: Exception => e
     }
   }
 }
@@ -189,13 +186,14 @@ object clairvoyant {
 
   def main(args: Array[String]) =
     if (args.length < 1) println(usage)
-    else {
-      val spider = Spider.load(args(0))
-      if (!spider.startURLs.isEmpty) {
-        val spiderInstance = spider.run
-        Console.console
-        spiderInstance.stop
-        println("Traveled URI: " + spider.allURLs.length)
-      } else println("spider config error")
-    }
+    else
+      Spider.load(args(0)) match {
+        case spider: Spider.Spider => {
+          val spiderInstance = spider.run
+          Console.console
+          spiderInstance.stop
+          println("Traveled URI: " + spider.allURLs.length)
+        }
+        case e: Exception => println(e)
+      }
 }
