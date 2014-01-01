@@ -73,7 +73,7 @@ object Spider {
       }
     }
 
-    val loaders = (0 to concurrency - 1) map { i =>
+    val loaders = (0 to concurrency - 1).map(i =>
       actor {
         loop {
           react {
@@ -93,8 +93,7 @@ object Spider {
             case STOP => exit
           }
         }
-      }
-    }
+      })
 
     val controller = actor {
       loop {
@@ -126,7 +125,8 @@ object Spider {
     override def toString = {
       val filterTotal = filters.filters.length
       val traveledURLs = traveled.size
-      s"""Start URL: $startURLs
+      s"""------
+Start URL: $startURLs
 concurrency: $concurrency, delay: $delay ms, timeout: $timeout ms,
 Filter total: $filterTotal
 Folder: $folder
