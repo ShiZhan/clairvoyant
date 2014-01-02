@@ -181,6 +181,10 @@ object clairvoyant {
   val usage = "clairvoyant <spider>\n\nSpider JSON example:\n" +
     io.Source.fromInputStream(demoJson).mkString
 
+  // Monad:
+  // f1: args -> length
+  // f2: args(0) -> spider
+  // f3: spider -> run
   def main(args: Array[String]) =
     if (args.length < 1) println(usage)
     else
