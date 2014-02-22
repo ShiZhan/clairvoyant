@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 import sys, re
 
-valid_date = re.compile('^(19|20)[0-9][0-9](0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$')
-
 if len(sys.argv)<2:
-    print "generate-index (from)yyyymmdd (to)yyyymmdd > index.html(output)"
-    print "then run 'python -m SimpleHTTPServer 9080' (Ctrl+C after use)"
+    print "generate-spider (date1)yyyymmdd (date2)yyyymmdd > hbrb(date1)to(date2).json"
     exit(1)
 
 from_date = sys.argv[1]
 to_date   = sys.argv[2]
 
+valid_date = re.compile('^(19|20)[0-9][0-9](0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$')
+
 if (not valid_date.search(from_date)) or (not valid_date.search(to_date)) or (int(to_date) - int(from_date))<0:
     print "invalid parameter, input as \'command\' yyyymmdd (<) yyyymmdd."
-    sys.exit(1)
+    exit(1)
 
 print """{
   \"start\": ["""
@@ -41,5 +40,5 @@ print """  ],
     "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/menu.html": "a",
     "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/.*.html": "map[name=FPMap0] area"
   },
-  "store": "r:/hbrb20131215to1221"
-}"""
+  "store": "hbrb(%s)to(%s)"
+}""" % (from_date, to_date)
