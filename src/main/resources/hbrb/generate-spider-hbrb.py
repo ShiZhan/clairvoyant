@@ -15,7 +15,8 @@ if (not valid_date.search(from_date)) or (not valid_date.search(to_date)) or (in
     print "invalid parameter, input as \'command\' yyyymmdd (<) yyyymmdd."
     sys.exit(1)
 
-print "<h1>Generate hbrb.cnhubei.com link from " + from_date + " to " + to_date + "</h1><br/>"
+print """{
+  \"start\": ["""
 
 days_in_month = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 yyyy = int(from_date[:4])
@@ -27,5 +28,16 @@ while yyyy <= int(to_date[:4]):
             dd += 1
             date = '%04d%02d%02d' % (yyyy, mm, dd)
             if int(date) >= int(from_date) and int(date) <= int(to_date):
-                print "<a href=\"http://hbrb.cnhubei.com/html/hbrb/" + date + "/menu.html\">" + date + "</a>"
+                print "    \"http://hbrb.cnhubei.com/html/hbrb/" + date + "/menu.html\","
     yyyy += 1
+
+print """  ],
+  "concurrency": 3,
+  "delay": 1500,
+  "timeout": 10000,
+  "filters": {
+    "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/menu.html": "a",
+    "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/.*.html": "map[name=FPMap0] area"
+  },
+  "store": "r:/hbrb20131215to1221"
+}"""
