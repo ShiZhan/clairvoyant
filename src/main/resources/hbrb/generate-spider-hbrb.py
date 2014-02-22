@@ -2,7 +2,7 @@
 import sys, re
 
 if len(sys.argv)<2:
-    print "generate-spider (date1)yyyymmdd (date2)yyyymmdd > hbrb(date1)to(date2).json"
+    print "generate-spider (date1)yyyymmdd (date2)yyyymmdd > hbrb-date1-date2.json"
     exit(1)
 
 from_date = sys.argv[1]
@@ -40,5 +40,5 @@ print """  ],
     "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/menu.html": "a",
     "^http://hbrb.cnhubei.com/HTML/hbrb/\d{8}/.*.html": "map[name=FPMap0] area"
   },
-  "store": "hbrb(%s)to(%s)"
+  "store": "hbrb-%s-%s"
 }""" % (from_date, to_date)
