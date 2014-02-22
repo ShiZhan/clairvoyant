@@ -27,8 +27,10 @@ while yyyy <= int(to_date[:4]):
         for dd in range(days):
             dd += 1
             date = '%04d%02d%02d' % (yyyy, mm, dd)
-            if int(date) >= int(from_date) and int(date) <= int(to_date):
+            if int(date) >= int(from_date) and int(date) < int(to_date):
                 print "    \"http://hbrb.cnhubei.com/html/hbrb/" + date + "/menu.html\","
+            elif int(date) == int(to_date):
+                print "    \"http://hbrb.cnhubei.com/html/hbrb/" + date + "/menu.html\""
     yyyy += 1
 
 print """  ],
