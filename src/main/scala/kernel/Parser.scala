@@ -3,10 +3,9 @@ package kernel
 object Parser {
   import java.io.File
   import util.parsing.json.JSON
-  import org.apache.commons.codec.digest.DigestUtils
-  import Spider.{ Filters, Instance }
+  import Spider.Instance
 
-  def load(fileName: String) = {
+  def load(fileName: String) =
     try {
       val fileContent = io.Source.fromFile(new File(fileName)).mkString
       val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
@@ -19,15 +18,12 @@ object Parser {
       val _fname = config.get("store").get.toString
       val _folder = new File(_fname)
       val folder =
-        if (_folder.exists)
-          new File(_fname + "_" +
-            DigestUtils.md5Hex(compat.Platform.currentTime.toString))
+        if (_folder.exists) new File(_fname + "_" + System.currentTimeMillis.toString)
         else _folder
       folder.mkdir
 
-      Instance(startURLs, concurrency, delay, timeout, Filters(filters), folder.getAbsolutePath)
+      Instance(startURLs, concurrency, delay, timeout, filters, folder.getAbsolutePath)
     } catch {
       case e: Exception => e
     }
-  }
 }

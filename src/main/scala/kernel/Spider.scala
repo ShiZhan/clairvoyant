@@ -19,7 +19,7 @@ object Spider extends helper.Logging {
   import org.jsoup.Jsoup
   import org.jsoup.nodes.Document
 
-  case class Filters(filters: List[(util.matching.Regex, String)]) {
+  implicit class FilterOps(filters: List[(util.matching.Regex, String)]) {
     def check(url: String) = filters
       .filterNot { case (r, s) => r.findAllIn(url).isEmpty }
       .map { case (r, s) => s }
@@ -33,7 +33,7 @@ object Spider extends helper.Logging {
       Link(document.select("a").map(_.attr("abs:href"))
         .filter(httpValidator.isValid).toList)
 
-    def getLinkWith(filters: Filters) =
+    def getLinkWith(filters: List[(util.matching.Regex, String)]) =
       Link(filters.check(url).flatMap { selector =>
         document.select(selector).map(_.attr("abs:href"))
       }.filter(httpValidator.isValid))
@@ -51,8 +51,8 @@ object Spider extends helper.Logging {
 
   case class STOP
 
-  case class Instance(startURLs: List[String], concurrency: Int,
-    delay: Int, timeout: Int, filters: Filters, folder: String) {
+  case class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
+    filters: List[(util.matching.Regex, String)], folder: String) {
     private var traveled = collection.mutable.HashSet[String]()
     private def crawled(url: String) = traveled.contains(url)
 
@@ -115,7 +115,7 @@ object Spider extends helper.Logging {
     }
 
     override def toString = {
-      val filterTotal = filters.filters.length
+      val filterTotal = filters.length
       val traveledURLs = traveled.size
       s"""------
 Start URL: $startURLs
