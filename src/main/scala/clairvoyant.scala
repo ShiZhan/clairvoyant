@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import kernel.Console
+
 object clairvoyant {
-  import spider.Spider
-  import console.Console
+  import kernel.{ Console, Parser, Spider }
+  import helper.Resource
 
-  val demoJson = getClass.getResourceAsStream("demo.json")
   val usage = "clairvoyant <spider>\n\nSpider JSON example:\n" +
-    io.Source.fromInputStream(demoJson).mkString
+    Resource.getString("demo.json")
 
-  def main(args: Array[String]) =
-    if (args.length < 1) println(usage)
-    else
-      Spider.load(args(0)) match {
-        case spider: Spider.Instance => {
-          spider.run
-          Console.run
-          spider.stop
-          println(spider)
-        }
-        case e: Exception => println(e)
-      }
+  def main(args: Array[String]) = args.toList match {
+    case spiderFile :: Nil => Parser.load(spiderFile) match {
+      case spider: Spider.Instance =>
+        spider.run
+        Console.run
+        spider.stop
+        println(spider)
+      case e: Exception => println(e)
+    }
+    case _ => println(usage)
+  }
 }

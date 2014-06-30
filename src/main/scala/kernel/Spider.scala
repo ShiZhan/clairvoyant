@@ -1,7 +1,7 @@
 /**
  * Spider implementation
  */
-package spider
+package kernel
 
 /**
  * @author ShiZhan
@@ -9,10 +9,9 @@ package spider
  * usage:
  * load -> Instance -> run with controller, loader, writer ... -> stop
  */
-object Spider {
+object Spider extends helper.Logging {
   import java.io.{ File, PrintWriter }
   import collection.JavaConversions._
-  import util.parsing.json.JSON
   import actors.Actor
   import actors.Actor._
   import org.apache.commons.codec.digest.DigestUtils
@@ -20,17 +19,14 @@ object Spider {
   import org.jsoup.Jsoup
   import org.jsoup.nodes.Document
 
-  private val log = org.slf4j.LoggerFactory.getLogger(this.getClass)
-
-  private val httpSchemes = Array("http", "https")
-  private val httpValidator = new UrlValidator(httpSchemes)
-
-  private val filterNone = (".*".r, "#ThisIdMatchNothing")
   case class Filters(filters: List[(util.matching.Regex, String)]) {
     def check(url: String) = filters
       .filterNot { case (r, s) => r.findAllIn(url).isEmpty }
       .map { case (r, s) => s }
   }
+
+  private val httpSchemes = Array("http", "https")
+  private val httpValidator = new UrlValidator(httpSchemes)
 
   case class Page(url: String, document: Document) {
     def getLink =
@@ -74,7 +70,7 @@ object Spider {
         loop {
           react {
             case url: String => {
-              log.info("Loader [{}]: {}", i, url)
+              logger.info("Loader [{}]: {}", i, url)
               try {
                 val doc = Jsoup.parse(new java.net.URL(url), timeout)
                 val page = Page(url, doc)
@@ -115,7 +111,7 @@ object Spider {
       controller ! STOP
       loaders.foreach(_ ! STOP)
       writer ! STOP
-      log.info("STOP signal has been sent to all actors ...")
+      logger.info("STOP signal has been sent to all actors ...")
     }
 
     override def toString = {
@@ -127,32 +123,6 @@ concurrency: $concurrency, delay: $delay ms, timeout: $timeout ms,
 Filter total: $filterTotal
 Folder: $folder
 Traveled URLs: $traveledURLs"""
-    }
-  }
-
-  def load(fileName: String) = {
-    try {
-      val fileContent = io.Source.fromFile(new File(fileName)).mkString
-      val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
-      val startURLs = config.get("start").get.asInstanceOf[List[String]]
-      val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
-      val delay = config.get("delay").get.asInstanceOf[Double].toInt
-      val timeout = config.get("timeout").get.asInstanceOf[Double].toInt
-      val filters = config.get("filters").get.asInstanceOf[Map[String, String]].toList
-        .map { case (r, s) => (r.r, s) }
-      val _fname = config.get("store").get.toString
-      val _folder = new File(_fname)
-      val folder =
-        if (_folder.exists)
-          new File(_fname + "_" +
-            DigestUtils.md5Hex(compat.Platform.currentTime.toString))
-        else _folder
-      folder.mkdir
-
-      Instance(startURLs, concurrency, delay, timeout,
-        Filters(filters), folder.getAbsolutePath)
-    } catch {
-      case e: Exception => e
     }
   }
 }

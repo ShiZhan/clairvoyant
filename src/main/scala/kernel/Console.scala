@@ -1,7 +1,7 @@
 /**
  * Console loop
  */
-package console
+package kernel
 
 /**
  * @author ShiZhan
@@ -10,7 +10,7 @@ package console
 object Console {
   val prompt = "\n> "
 
-  def run: Unit = {
+  def run: Unit =
     for (line <- io.Source.stdin.getLines) {
       val output = line.split(" ").toList match {
         case "exit" :: Nil => return
@@ -19,5 +19,4 @@ object Console {
       }
       print(output + prompt)
     }
-  }
 }
