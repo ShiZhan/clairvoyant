@@ -2,10 +2,10 @@ name := "clairvoyant"
 
 version := "1.0"
 
-scalaVersion := "2.10.3"
+scalaVersion := Option(System.getProperty("scala.version")).getOrElse("2.10.4")
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-actors" % "2.10.3",
+  "org.scala-lang" % "scala-actors" % "2.10.4",
   "commons-codec" % "commons-codec" % "1.8",
   "commons-validator" % "commons-validator" % "1.4.0",
   "org.jsoup" % "jsoup" % "1.7.3",
