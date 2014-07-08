@@ -22,8 +22,10 @@ object Parser {
         else _folder
       folder.mkdir
 
-      Instance(startURLs, concurrency, delay, timeout, filters, folder.getAbsolutePath)
+      Some(new Instance(startURLs, concurrency, delay, timeout, filters, folder.getAbsolutePath))
     } catch {
-      case e: Exception => e
+      case e: Exception =>
+        println(e)
+        None
     }
 }

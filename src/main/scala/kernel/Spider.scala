@@ -53,7 +53,7 @@ object Spider extends helper.Logging {
 
   case class STOP
 
-  case class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
+  class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
     filters: List[(util.matching.Regex, String)], folder: String) {
     private var traveled = collection.mutable.HashSet[String]()
     private def crawled(url: String) = traveled.contains(url)

@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import kernel.Console
-
 object clairvoyant {
   import kernel.{ Parser, Spider }
   import helper.Resource
 
-  val usage = "clairvoyant <spider>\n\nSpider JSON example:\n" +
-    Resource.getString("demo.json")
+  val usage =
+    """clairvoyant <spider>
+Spider JSON example:
+""" + Resource.getString("demo.json")
 
   def main(args: Array[String]) = args.toList match {
     case spiderFile :: Nil => Parser.load(spiderFile) match {
-      case spider: Spider.Instance => spider.run
-      case e: Exception => println(e)
+      case Some(spider) => spider.run
+      case _ =>
     }
     case _ => println(usage)
   }
