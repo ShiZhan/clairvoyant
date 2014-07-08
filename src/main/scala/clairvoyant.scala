@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 object clairvoyant {
-  import kernel.{ Parser, Spider }
+  import kernel.Parser
   import helper.Resource
 
   val usage =

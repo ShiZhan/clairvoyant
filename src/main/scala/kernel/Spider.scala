@@ -6,8 +6,6 @@ package kernel
 /**
  * @author ShiZhan
  * Spider implementation
- * usage:
- * load -> Instance -> run with controller, loader, writer ... -> stop
  */
 object Spider extends helper.Logging {
   import java.io.{ File, PrintWriter }
@@ -58,7 +56,7 @@ object Spider extends helper.Logging {
     private var traveled = collection.mutable.HashSet[String]()
     private def crawled(url: String) = traveled.contains(url)
 
-    val loaders = (0 to concurrency - 1).map(i =>
+    val loaders = Array.tabulate(concurrency)(i =>
       actor {
         loop {
           react {
