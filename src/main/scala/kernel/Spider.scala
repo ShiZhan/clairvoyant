@@ -49,21 +49,14 @@ object Spider extends helper.Logging {
 
   case class Link(links: List[String]) { def isEmpty = links.isEmpty }
 
+  case class HALT
+
   case class STOP
 
   case class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
     filters: List[(util.matching.Regex, String)], folder: String) {
     private var traveled = collection.mutable.HashSet[String]()
     private def crawled(url: String) = traveled.contains(url)
-
-    val writer = actor {
-      loop {
-        react {
-          case page: Page => page.storeTo(folder)
-          case STOP => exit
-        }
-      }
-    }
 
     val loaders = (0 to concurrency - 1).map(i =>
       actor {
@@ -75,8 +68,8 @@ object Spider extends helper.Logging {
                 val doc = Jsoup.parse(new java.net.URL(url), timeout)
                 val page = Page(url, doc)
                 val links = page.getLinkWith(filters)
-                writer ! page
-                if (!links.isEmpty) sender ! links
+                page.storeTo(folder)
+                if (links.isEmpty) sender ! HALT else sender ! links
                 traveled += url
               } catch {
                 case e: Exception => println(e)
@@ -100,29 +93,23 @@ object Spider extends helper.Logging {
                   }
               }
             }
-          case STOP => exit
-        }
-      }
-    }
-
-    def run = controller ! Link(startURLs)
-
-    def stop = {
-      controller ! STOP
-      loaders.foreach(_ ! STOP)
-      writer ! STOP
-      logger.info("STOP signal has been sent to all actors ...")
-    }
-
-    override def toString = {
-      val filterTotal = filters.length
-      val traveledURLs = traveled.size
-      s"""------
+          case HALT if (loaders.forall(_.getState == State.Suspended)) => {
+            loaders.foreach(_ ! STOP)
+            val filterTotal = filters.length
+            val traveledURLs = traveled.size
+            val summary = s"""------
 Start URL: $startURLs
 concurrency: $concurrency, delay: $delay ms, timeout: $timeout ms,
 Filter total: $filterTotal
 Folder: $folder
 Traveled URLs: $traveledURLs"""
+            println(summary)
+            exit
+          }
+        }
+      }
     }
+
+    def run = controller ! Link(startURLs)
   }
 }

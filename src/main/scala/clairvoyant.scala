@@ -16,7 +16,7 @@
 import kernel.Console
 
 object clairvoyant {
-  import kernel.{ Console, Parser, Spider }
+  import kernel.{ Parser, Spider }
   import helper.Resource
 
   val usage = "clairvoyant <spider>\n\nSpider JSON example:\n" +
@@ -24,11 +24,7 @@ object clairvoyant {
 
   def main(args: Array[String]) = args.toList match {
     case spiderFile :: Nil => Parser.load(spiderFile) match {
-      case spider: Spider.Instance =>
-        spider.run
-        Console.run
-        spider.stop
-        println(spider)
+      case spider: Spider.Instance => spider.run
       case e: Exception => println(e)
     }
     case _ => println(usage)
