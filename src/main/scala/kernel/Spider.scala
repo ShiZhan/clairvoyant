@@ -47,14 +47,26 @@ object Spider extends helper.Logging {
 
   case class Link(links: List[String]) { def isEmpty = links.isEmpty }
 
-  case class HALT
+  case class Add(url: String)
+  case class Check(url: String)
+  case class Count
 
+  case class HALT
   case class STOP
 
   class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
     filters: List[(util.matching.Regex, String)], folder: String) {
-    private var traveled = collection.mutable.HashSet[String]()
-    private def crawled(url: String) = traveled.contains(url)
+    val lister = actor {
+      var traveled = collection.mutable.HashSet[String]()
+      loop {
+        react {
+          case Add(url) => traveled += url
+          case Check(url) => reply(traveled.contains(url))
+          case Count => reply(traveled.size)
+          case STOP => exit
+        }
+      }
+    }
 
     val loaders = Array.tabulate(concurrency)(i =>
       actor {
@@ -68,7 +80,7 @@ object Spider extends helper.Logging {
                 val links = page.getLinkWith(filters)
                 page.storeTo(folder)
                 if (links.isEmpty) sender ! HALT else sender ! links
-                traveled += url
+                lister ! Add(url)
               } catch {
                 case e: Exception => println(e)
               }
@@ -85,16 +97,20 @@ object Spider extends helper.Logging {
             urls.grouped(concurrency).foreach {
               _.zipWithIndex.foreach {
                 case (url, index) =>
-                  if (!crawled(url)) {
-                    loaders(index) ! url
-                    Thread.sleep(delay)
+                  lister !? Check(url) match {
+                    case v: Boolean if (v) =>
+                    case _ => {
+                      loaders(index) ! url
+                      Thread.sleep(delay)
+                    }
                   }
               }
             }
           case HALT if (loaders.forall(_.getState == State.Suspended)) => {
-            loaders.foreach(_ ! STOP)
             val filterTotal = filters.length
-            val traveledURLs = traveled.size
+            val traveledURLs = lister !? Count match { case size: Int => size; case _ => 0 }
+            loaders.foreach(_ ! STOP)
+            lister ! STOP
             val summary = s"""------
 Start URL: $startURLs
 concurrency: $concurrency, delay: $delay ms, timeout: $timeout ms,
