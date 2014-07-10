@@ -10,14 +10,17 @@ package kernel
 object Spider extends helper.Logging {
   import java.io.{ File, PrintWriter }
   import collection.JavaConversions._
-  import actors.Actor
-  import actors.Actor._
+  import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+  import akka.util.Timeout
   import org.apache.commons.codec.digest.DigestUtils
   import org.apache.commons.validator.routines.UrlValidator
   import org.jsoup.Jsoup
   import org.jsoup.nodes.Document
 
-  implicit class FilterOps(filters: List[(util.matching.Regex, String)]) {
+  val system = ActorSystem("CoreSystem")
+
+  type Filters = List[(util.matching.Regex, String)]
+  implicit class FilterOps(filters: Filters) {
     def check(url: String) = filters
       .filterNot { case (r, s) => r.findAllIn(url).isEmpty }
       .map { case (r, s) => s }
@@ -46,83 +49,66 @@ object Spider extends helper.Logging {
   }
 
   case class Link(links: List[String]) { def isEmpty = links.isEmpty }
+  case class Crawled(url: String)
+  case class Crawling(url: String)
 
-  case class Add(url: String)
-  case class Check(url: String)
-  case class Count
-
-  case class HALT
   case class STOP
+
+  class Loader(index: Int, timeout: Int, filters: Filters, folder: String)
+    extends Actor {
+    def receive = {
+      case Crawling(url) => {
+        logger.info("Loader [{}]: {}", index, url)
+        try {
+          val doc = Jsoup.parse(new java.net.URL(url), timeout)
+          val page = Page(url, doc)
+          val links = page.getLinkWith(filters)
+          page.storeTo(folder)
+          if (!links.isEmpty) sender ! links
+          sender ! Crawled(url)
+        } catch {
+          case e: Exception => println(e)
+        }
+      }
+      case STOP => exit
+    }
+  }
+
+  class Controller(loaders: Array[ActorRef], delay: Int) extends Actor {
+    val concurrency = loaders.length
+    var crawled = collection.mutable.HashSet[String]()
+    var crawling = collection.mutable.HashSet[String]()
+    def receive = {
+      case Link(urls) => urls.grouped(concurrency).foreach {
+        _.zipWithIndex.foreach {
+          case (url, index) if (!crawled.contains(url)) => {
+            crawling += url
+            loaders(index) ! Crawling(url)
+            Thread.sleep(delay)
+          }
+        }
+      }
+      case Crawled(url) => {
+        crawled += url
+        crawling -= url
+        if (crawling.isEmpty) {
+          val traveledURLs = crawled.size
+          loaders.foreach(_ ! STOP)
+          println(s"\nTraveled URLs: $traveledURLs")
+          exit
+        }
+      }
+    }
+  }
 
   class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
     filters: List[(util.matching.Regex, String)], folder: String) {
-    val lister = actor {
-      var traveled = collection.mutable.HashSet[String]()
-      loop {
-        react {
-          case Add(url) => traveled += url
-          case Check(url) => reply(traveled.contains(url))
-          case Count => reply(traveled.size)
-          case STOP => exit
-        }
-      }
+    val loaders = Array.tabulate(concurrency) { index =>
+      system.actorOf(Props(new Loader(index, timeout, filters, folder)),
+        name = "loader" + "%03d".format(index))
     }
 
-    val loaders = Array.tabulate(concurrency)(i =>
-      actor {
-        loop {
-          react {
-            case url: String => {
-              logger.info("Loader [{}]: {}", i, url)
-              try {
-                val doc = Jsoup.parse(new java.net.URL(url), timeout)
-                val page = Page(url, doc)
-                val links = page.getLinkWith(filters)
-                page.storeTo(folder)
-                if (links.isEmpty) sender ! HALT else sender ! links
-                lister ! Add(url)
-              } catch {
-                case e: Exception => println(e)
-              }
-            }
-            case STOP => exit
-          }
-        }
-      })
-
-    val controller = actor {
-      loop {
-        react {
-          case Link(urls) =>
-            urls.grouped(concurrency).foreach {
-              _.zipWithIndex.foreach {
-                case (url, index) =>
-                  lister !? Check(url) match {
-                    case v: Boolean if (v) =>
-                    case _ => {
-                      loaders(index) ! url
-                      Thread.sleep(delay)
-                    }
-                  }
-              }
-            }
-          case HALT if (loaders.forall(_.getState == State.Suspended)) => {
-            val filterTotal = filters.length
-            val traveledURLs = lister !? Count match { case size: Int => size; case _ => 0 }
-            loaders.foreach(_ ! STOP)
-            lister ! STOP
-            val summary = s"""------
-Start URL: $startURLs
-concurrency: $concurrency, delay: $delay ms, timeout: $timeout ms,
-Filter total: $filterTotal
-Folder: $folder
-Traveled URLs: $traveledURLs"""
-            println(summary)
-            exit
-          }
-        }
-      }
-    }
+    val controller = system.actorOf(Props(new Controller(loaders, delay)), name = "controller")
 
     def run = controller ! Link(startURLs)
   }
