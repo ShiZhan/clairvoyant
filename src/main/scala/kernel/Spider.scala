@@ -11,13 +11,10 @@ object Spider extends helper.Logging {
   import java.io.{ File, PrintWriter }
   import collection.JavaConversions._
   import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
-  import akka.util.Timeout
   import org.apache.commons.codec.digest.DigestUtils
   import org.apache.commons.validator.routines.UrlValidator
   import org.jsoup.Jsoup
   import org.jsoup.nodes.Document
-
-  val system = ActorSystem("CoreSystem")
 
   type Filters = List[(util.matching.Regex, String)]
   implicit class FilterOps(filters: Filters) {
@@ -26,15 +23,14 @@ object Spider extends helper.Logging {
       .map { case (r, s) => s }
   }
 
-  private val httpSchemes = Array("http", "https")
-  private val httpValidator = new UrlValidator(httpSchemes)
+  private val httpValidator = new UrlValidator(Array("http", "https"))
 
   case class Page(url: String, document: Document) {
     def getLink =
       Link(document.select("a").map(_.attr("abs:href"))
         .filter(httpValidator.isValid).toList)
 
-    def getLinkWith(filters: List[(util.matching.Regex, String)]) =
+    def getLinkWith(filters: Filters) =
       Link(filters.check(url).flatMap { selector =>
         document.select(selector).map(_.attr("abs:href"))
       }.filter(httpValidator.isValid))
@@ -51,11 +47,9 @@ object Spider extends helper.Logging {
   case class Link(links: List[String]) { def isEmpty = links.isEmpty }
   case class Crawled(url: String)
   case class Crawling(url: String)
-
   case class STOP
 
-  class Loader(index: Int, timeout: Int, filters: Filters, folder: String)
-    extends Actor {
+  class Loader(index: Int, timeout: Int, filters: Filters, folder: String) extends Actor {
     def receive = {
       case Crawling(url) => {
         logger.info("Loader [{}]: {}", index, url)
@@ -102,7 +96,9 @@ object Spider extends helper.Logging {
   }
 
   class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
-    filters: List[(util.matching.Regex, String)], folder: String) {
+    filters: Filters, folder: String) {
+    val system = ActorSystem("CoreSystem")
+
     val loaders = Array.tabulate(concurrency) { index =>
       system.actorOf(Props(new Loader(index, timeout, filters, folder)),
         name = "loader" + "%03d".format(index))
