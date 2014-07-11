@@ -47,7 +47,7 @@ object Spider extends helper.Logging {
   case class Link(links: List[String]) { def isEmpty = links.isEmpty }
   case class Crawled(url: String)
   case class Crawling(url: String)
-  case class STOP
+  case class STOP()
 
   class Loader(index: Int, timeout: Int, filters: Filters, folder: String) extends Actor {
     def receive = {
@@ -64,7 +64,7 @@ object Spider extends helper.Logging {
           case e: Exception => println(e)
         }
       }
-      case STOP => exit
+      case STOP => sys.exit
     }
   }
 
@@ -89,7 +89,7 @@ object Spider extends helper.Logging {
           val traveledURLs = crawled.size
           loaders.foreach(_ ! STOP)
           println(s"\nTraveled URLs: $traveledURLs")
-          exit
+          sys.exit
         }
       }
     }
