@@ -2,20 +2,20 @@ package kernel
 
 object Parser {
   import java.io.File
-  import util.parsing.json.JSON
+  import com.typesafe.config.{ Config, ConfigFactory }
   import Spider.Instance
 
   def load(fileName: String) =
     try {
       val fileContent = io.Source.fromFile(new File(fileName)).mkString
-      val config = JSON.parseFull(fileContent).get.asInstanceOf[Map[String, Any]]
-      val startURLs = config.get("start").get.asInstanceOf[List[String]]
-      val concurrency = config.get("concurrency").get.asInstanceOf[Double].toInt
-      val delay = config.get("delay").get.asInstanceOf[Double].toInt
-      val timeout = config.get("timeout").get.asInstanceOf[Double].toInt
-      val filters = config.get("filters").get.asInstanceOf[Map[String, String]].toList
+      val config = ConfigFactory.load(fileName)
+      val startURLs = config.getList("start").asInstanceOf[List[String]]
+      val concurrency = config.getInt("concurrency")
+      val delay = config.getInt("delay")
+      val timeout = config.getInt("timeout")
+      val filters = config.getList("filters").asInstanceOf[Map[String, String]].toList
         .map { case (r, s) => (r.r, s) }
-      val _fname = config.get("store").get.toString
+      val _fname = config.getString("store")
       val _folder = new File(_fname)
       val folder =
         if (_folder.exists) new File(_fname + "_" + System.currentTimeMillis.toString)

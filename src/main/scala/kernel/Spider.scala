@@ -96,7 +96,7 @@ object Spider extends helper.Logging {
   }
 
   class Instance(startURLs: List[String], concurrency: Int, delay: Int, timeout: Int,
-    filters: Filters, folder: String) {
+      filters: Filters, folder: String) {
     val system = ActorSystem("CoreSystem")
 
     val loaders = Array.tabulate(concurrency) { index =>
