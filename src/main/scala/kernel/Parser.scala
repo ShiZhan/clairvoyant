@@ -7,7 +7,6 @@ object Parser {
 
   def load(fileName: String) =
     try {
-      val fileContent = io.Source.fromFile(new File(fileName)).mkString
       val config = ConfigFactory.load(fileName)
       val startURLs = config.getList("start").asInstanceOf[List[String]]
       val concurrency = config.getInt("concurrency")
